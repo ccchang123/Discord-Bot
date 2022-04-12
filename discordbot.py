@@ -7,10 +7,12 @@ import sys
 import json
 import logging
 import tracemalloc
-import error_code
+import lang
 
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
+
+Lang = lang.lang_chose(data['language'])
 
 now = datetime.now()
 date_time = '<'+now.strftime("%Y-%m-%d, %H:%M:%S")+'>'
@@ -26,7 +28,7 @@ logging.basicConfig(level=logging.NOTSET, filename='BotLog.log', filemode='w', f
 
 @client.event
 async def on_ready():
-    print(date_time+' 目前登入身份：',client.user)
+    print(date_time, Lang['login-name'], client.user)
     game = discord.Game(date_time)
     #online,offline,idle,dnd,invisible
     await client.change_presence(status=discord.Status.online, activity=game)
@@ -36,21 +38,21 @@ async def on_voice_state_update(member, before, after):
     channel = after.channel
     try:
         if before.channel.members == [] and not before.channel.id == int(data['local-channel-id']):
-            if before.channel.category_id == int(data['create-category-id']) and before.channel.name == member.name + ' 的頻道':
+            if before.channel.category_id == int(data['create-category-id']) and before.channel.name == member.name + Lang['create-channel-name']:
                 await before.channel.delete()
     except:
          pass
     if channel.id == int(data['local-channel-id']):
         guild = after.channel.guild
         private_channels = discord.utils.get(guild.categories, id= int(data['create-category-id']))
-        voice_channel = await guild.create_voice_channel(member.name + ' 的頻道', overwrites=None, category=private_channels)
+        voice_channel = await guild.create_voice_channel(member.name + Lang['create-channel-name'], overwrites=None, category=private_channels)
         await member.move_to(voice_channel)
         await voice_channel.set_permissions(member, manage_channels=True, manage_permissions=True)
-        print(date_time, member.name+' 建立了語音頻道')
+        print(date_time, member.name, Lang['when-channel-create'])
 
 @client.event
 async def on_message(message):
-    global data, prefix
+    global data, prefix, Lang
     admin = False
     if message.author.id== int(data['admin-id-1']) or message.author.id== int(data['admin-id-2']):
         admin = True
@@ -60,7 +62,7 @@ async def on_message(message):
     if message.content.startswith(prefix+'gay'):
         gay_temp = message.content.split(" ",2)
         if len(gay_temp) == 1:
-            embed = discord.Embed(title='用法:', description='.gay <@user>', color=0x4b49d8)
+            embed = discord.Embed(title=Lang['usage'], description='.gay '+Lang['@user'], color=0x4b49d8)
             gay_error_message = await message.channel.send(embed=embed)
             await asyncio.sleep(5)
             await message.delete()
@@ -81,14 +83,17 @@ async def on_message(message):
             client.close()
             sys.exit()
         else:
-            await error_code.no_permission(message)
+            permission_error = await message.channel.send(Lang['permission-error'])
+            await asyncio.sleep(1)
+            await permission_error.delete()
+            await message.delete()
     if message.content.startswith(prefix+'tlm'):
         if admin == True:
             await message.delete()
             time_limit_message_temp = message.content.split(" ",2)
             if len(time_limit_message_temp) == 1:
-                embed = discord.Embed(title='用法:', description='.tlm <message>', color=0x4b49d8)
-                embed.add_field(name="用途:", value="發送一個臨時訊息", inline=False)
+                embed = discord.Embed(title=Lang['usage'], description='.tlm '+Lang['message'], color=0x4b49d8)
+                embed.add_field(name=Lang['uses'], value=Lang['temp-message'], inline=False)
                 time_limit_error_message = await message.channel.send(embed=embed)
                 await asyncio.sleep(10)
                 await time_limit_error_message.delete()   
@@ -97,11 +102,14 @@ async def on_message(message):
                 for i in range(2, len(time_limit_message_temp)):
                     text += time_limit_message_temp[i]
                 time_limit_message = await message.channel.send(text)
-                print(date_time, message.author,'發送了臨時訊息:',text)
+                print(date_time, message.author,Lang['sent-temp-message'],text)
                 await asyncio.sleep(600)
                 await time_limit_message.delete()
         else:
-            await error_code.no_permission(message)
+            permission_error = await message.channel.send(Lang['permission-error'])
+            await asyncio.sleep(1)
+            await permission_error.delete()
+            await message.delete()
     if message.content.startswith(prefix+'copy'):
         if admin == True:
             await message.delete()
@@ -116,19 +124,46 @@ async def on_message(message):
                     await existing_channel.clone()
                     await existing_channel.delete()
         else:
-            await error_code.no_permission(message)
+            permission_error = await message.channel.send(Lang['permission-error'])
+            await asyncio.sleep(1)
+            await permission_error.delete()
+            await message.delete()
     if message.content.startswith(prefix+'reload'):
         if admin == True:
-            print(date_time,'設定檔已重新加載')
+            print(date_time, Lang['reloaded'])
             await message.delete()
-            await message.channel.send('設定檔已重新加載')
+            await message.channel.send(Lang['reloaded'])
             data = json.load(open('config.json'))
             prefix = data['command-prefix']
+            Lang = lang.lang_chose(data['language'])
         else:
-            await error_code.no_permission(message)
+            permission_error = await message.channel.send(Lang['permission-error'])
+            await asyncio.sleep(1)
+            await permission_error.delete()
+            await message.delete()
+    if message.content.startswith(prefix+'chlang'):
+        if admin == True:
+            await message.delete()
+            chlang_temp = message.content.split(" ",2)
+            if len(chlang_temp) == 1 or len(chlang_temp) >= 3:
+                embed = discord.Embed(title=Lang['usage'], description='.chlang '+Lang['language'], color=0x4b49d8)
+                embed.add_field(name=Lang['uses'], value=Lang['change-lang-message'], inline=False)
+                chlang_error_message = await message.channel.send(embed=embed)
+                await asyncio.sleep(10)
+                await chlang_error_message.delete()
+            else:
+                chlang = 'lang/'+chlang_temp[1]+'.json'
+                with open(chlang, "r", encoding = "utf8") as lang_file:
+                    Lang = json.load(lang_file)
+                await message.channel.send(Lang['lang-changed'])
+        else:
+            permission_error = await message.channel.send(Lang['permission-error'])
+            await asyncio.sleep(1)
+            await permission_error.delete()
+            await message.delete()
     if message.content.startswith(prefix):
         temp = message.content.split(" ",2)
         if len(temp) == 1:
-            await message.reply('未知的指令', mention_author=True)
+            await message.reply(Lang['unknown-command'], mention_author=True)
 
 client.run(data['token'])
