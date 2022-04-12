@@ -1,0 +1,18 @@
+{
+    "login-name": " 目前登入身份：",
+    "create-channel-name": " 的频道",
+    "when-channel-create": " 建立了语音频道",
+    "usage": " 用法:",
+    "uses": " 用途:",
+    "temp-message": " 发送一个临时讯息",
+    "sent-temp-message": " 发送了临时讯息:",
+    "change-lang-message": " 更改语言",
+    "lang-changed": " 语言已更改!",
+    "reloaded": " 设定档及语言已重新加载!",
+    "unknown-command": " 未知的指令",
+    "permission-error": " 你没有权限!",
+
+    "@user": " <@使用者>",
+    "message": " <讯息>",
+    "language": " <语言>"
+}
