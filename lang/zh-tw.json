@@ -1,0 +1,18 @@
+{
+    "login-name": " 目前登入身份：",
+    "create-channel-name": " 的頻道",
+    "when-channel-create": " 建立了語音頻道",
+    "usage": " 用法:",
+    "uses": " 用途:",
+    "temp-message": " 發送一個臨時訊息",
+    "sent-temp-message": " 發送了臨時訊息:",
+    "change-lang-message": " 更改語言",
+    "lang-changed": " 語言已更改!",
+    "reloaded": " 設定檔及語言已重新加載!",
+    "unknown-command": " 未知的指令",
+    "permission-error": " 你沒有權限!",
+
+    "@user": " <@使用者>",
+    "message": " <訊息>",
+    "language": " <語言>"
+}

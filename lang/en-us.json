@@ -1,0 +1,18 @@
+{
+    "login-name": " Now login name：",
+    "create-channel-name": "'s channel",
+    "when-channel-create": " Created a voice channel",
+    "usage": " Usage:",
+    "uses": " Uses:",
+    "temp-message": " Send a temp message",
+    "sent-temp-message": " sent a temp message:",
+    "change-lang-message": " change language",
+    "lang-changed": " language has been changed!",
+    "reloaded": " config and lang has been reloaded!",
+    "unknown-command": " Unknown command",
+    "permission-error": " You do not have any permission!",
+
+    "@user": " <@user>",
+    "message": " <message>",
+    "language": " <language>"
+}
