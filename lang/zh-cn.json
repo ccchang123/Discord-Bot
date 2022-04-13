@@ -11,6 +11,8 @@
     "reloaded": " 设定档及语言已重新加载!",
     "unknown-command": " 未知的指令",
     "permission-error": " 你没有权限!",
+    "debug-enabled": " 侦错模式: 开启",
+    "debug-disabled": " 侦错模式: 关闭",
 
     "@user": " <@使用者>",
     "message": " <讯息>",
