@@ -6,6 +6,8 @@ Features
 
 **II. Picture Only Channel**
 
+more features can be see in [command](https://github.com/ccchang123/Discord-Bot/wiki/commands) and [config](https://github.com/ccchang123/Discord-Bot/wiki/config) wiki.
+
 Setup
 ----
 Setting up the Discord Bot is relatively painless,
