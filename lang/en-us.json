@@ -12,6 +12,7 @@
     "reloaded": " Config and language has been reloaded!",
     "unknown-command": " Unknown command",
     "permission-error": " You do not have any permission!",
+    "language-error": " This language file does not exist!",
     "debug-enabled": " Debug mode: enabled",
     "debug-disabled": " Debug mode: disabled",
 

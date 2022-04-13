@@ -12,6 +12,7 @@
     "reloaded": " 設定檔及語言檔已重新加載!",
     "unknown-command": " 未知的指令",
     "permission-error": " 你沒有權限!",
+    "language-error": " 該語言檔不存在!",
     "debug-enabled": " 偵錯模式: 開啟",
     "debug-disabled": " 偵錯模式: 關閉",
 

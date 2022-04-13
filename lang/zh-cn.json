@@ -12,6 +12,7 @@
     "reloaded": " 设定档及语言档已重新加载!",
     "unknown-command": " 未知的指令",
     "permission-error": " 你没有权限!",
+    "language-error": " 该语言档不存在!",
     "debug-enabled": " 侦错模式: 开启",
     "debug-disabled": " 侦错模式: 关闭",
 
