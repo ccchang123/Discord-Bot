@@ -8,6 +8,7 @@
     "sent-temp-message": " 發送了臨時訊息:",
     "change-lang-message": " 更改語言",
     "lang-changed": " 語言已更改!",
+    "activity-changed": " 機器人狀態已更改為",
     "reloaded": " 設定檔及語言檔已重新加載!",
     "unknown-command": " 未知的指令",
     "permission-error": " 你沒有權限!",

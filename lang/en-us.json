@@ -8,6 +8,7 @@
     "sent-temp-message": " Sent a temp message:",
     "change-lang-message": " Change language",
     "lang-changed": " Language has been changed!",
+    "activity-changed": " activity of bot has been changed to",
     "reloaded": " Config and language has been reloaded!",
     "unknown-command": " Unknown command",
     "permission-error": " You do not have any permission!",
