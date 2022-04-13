@@ -7,24 +7,26 @@ import sys
 import json
 import logging
 import tracemalloc
-import lang
+import error_code, lang
 
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
 
 Lang = lang.lang_chose(data['language'])
-
 now = datetime.now()
 date_time = '<'+now.strftime("%Y-%m-%d, %H:%M:%S")+'>'
-
 prefix = data['command-prefix']
 client = discord.Client()
 intents = discord.Intents.all()
 
 tracemalloc.start()
 
-FORMAT = '%(asctime)s %(levelname)s: %(message)s'
-logging.basicConfig(level=logging.NOTSET, filename='BotLog.log', filemode='w', format=FORMAT)
+if data['debug-mode'] == 'true':
+    FORMAT = '%(asctime)s %(levelname)s: %(message)s'
+    logging.basicConfig(level=logging.NOTSET, filename='BotLog.log', filemode='w', format=FORMAT)
+    print(Lang['debug-enabled'])
+else:
+    print(Lang['debug-disabled'])
 
 @client.event
 async def on_ready():
@@ -59,7 +61,7 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if message.content.startswith(prefix+'gay'):
+    if message.content.startswith(prefix+'gay') and data['command-gay'] == 'true':
         gay_temp = message.content.split(" ",2)
         if len(gay_temp) == 1:
             embed = discord.Embed(title=Lang['usage'], description='.gay '+Lang['@user'], color=0x4b49d8)
@@ -73,9 +75,10 @@ async def on_message(message):
             await asyncio.sleep(5)
             await message.delete()
             await gay_message.delete()
-    if message.content.startswith(prefix+'day'):
+    if message.content.startswith(prefix+'time') and data['command-time'] == 'true':
         await message.reply(date_time, mention_author=True)
-    if message.content.startswith(prefix+'exit'):
+        return
+    if message.content.startswith(prefix+'exit') and data['command-exit'] == 'true':
         if admin == True:
             await message.delete()
             game = discord.Game(date_time)
@@ -83,11 +86,8 @@ async def on_message(message):
             client.close()
             sys.exit()
         else:
-            permission_error = await message.channel.send(Lang['permission-error'])
-            await asyncio.sleep(1)
-            await permission_error.delete()
-            await message.delete()
-    if message.content.startswith(prefix+'tlm'):
+            await error_code.permission(message, Lang)
+    if message.content.startswith(prefix+'tlm') and data['command-tlm'] == 'true':
         if admin == True:
             await message.delete()
             time_limit_message_temp = message.content.split(" ",2)
@@ -106,11 +106,8 @@ async def on_message(message):
                 await asyncio.sleep(600)
                 await time_limit_message.delete()
         else:
-            permission_error = await message.channel.send(Lang['permission-error'])
-            await asyncio.sleep(1)
-            await permission_error.delete()
-            await message.delete()
-    if message.content.startswith(prefix+'copy'):
+            await error_code.permission(message, Lang)
+    if message.content.startswith(prefix+'copy') and data['command-copy'] == 'true':
         if admin == True:
             await message.delete()
             copy_temp = message.content.split(" ",2)
@@ -124,11 +121,8 @@ async def on_message(message):
                     await existing_channel.clone()
                     await existing_channel.delete()
         else:
-            permission_error = await message.channel.send(Lang['permission-error'])
-            await asyncio.sleep(1)
-            await permission_error.delete()
-            await message.delete()
-    if message.content.startswith(prefix+'reload'):
+            await error_code.permission(message, Lang)
+    if message.content.startswith(prefix+'reload') and data['command-reload'] == 'true':
         if admin == True:
             print(date_time, Lang['reloaded'])
             await message.delete()
@@ -137,11 +131,8 @@ async def on_message(message):
             prefix = data['command-prefix']
             Lang = lang.lang_chose(data['language'])
         else:
-            permission_error = await message.channel.send(Lang['permission-error'])
-            await asyncio.sleep(1)
-            await permission_error.delete()
-            await message.delete()
-    if message.content.startswith(prefix+'chlang'):
+            await error_code.permission(message, Lang)
+    if message.content.startswith(prefix+'chlang') and data['command-chlang'] == 'true':
         if admin == True:
             await message.delete()
             chlang_temp = message.content.split(" ",2)
@@ -157,10 +148,7 @@ async def on_message(message):
                     Lang = json.load(lang_file)
                 await message.channel.send(Lang['lang-changed'])
         else:
-            permission_error = await message.channel.send(Lang['permission-error'])
-            await asyncio.sleep(1)
-            await permission_error.delete()
-            await message.delete()
+            await error_code.permission(message, Lang)
     if message.content.startswith(prefix):
         temp = message.content.split(" ",2)
         if len(temp) == 1:

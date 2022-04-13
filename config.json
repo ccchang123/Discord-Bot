@@ -6,4 +6,13 @@
     "create-category-id": "000000000000000000",
     "admin-id-1": "000000000000000000",
     "admin-id-2": "000000000000000000"
+	"debug-mode": "true",
+
+    "command-gay": "true",
+    "command-time": "true",
+    "command-exit": "true",
+    "command-tlm": "true",
+    "command-copy": "true",
+    "command-reload": "true",
+    "command-chlang": "true"
 }
