@@ -16,11 +16,13 @@ def check(lang):
 async def chlang_check(message, lang, Lang):
     check_config = os.path.isfile('lang/'+lang+'.json')
     if check_config == False:
-        print('load '+lang+' file --- fail')
         await message.channel.send(Lang['language-error'])
+        if data['debug-mode'] == 'true':
+            print('load '+lang+' file --- fail')
         return False
     else:
-        print('load '+lang+' file --- ok')
+        if data['debug-mode'] == 'true':
+            print('load '+lang+' file --- ok')
 
 def lang_chose(sele):
     if sele == 'zh-tw':
