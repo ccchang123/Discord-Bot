@@ -6,6 +6,8 @@ Features
 
 **II. Picture Only Channel**
 
+**III. Self Test**
+
 more features can be seen in the [commands](https://github.com/ccchang123/Discord-Bot/wiki/commands) and [config](https://github.com/ccchang123/Discord-Bot/wiki/config) wiki.
 
 Setup
