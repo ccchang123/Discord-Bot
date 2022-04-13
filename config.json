@@ -1,12 +1,15 @@
 {
-	"language": " language ",
+	"language": "language",
     "token": "your bot token",
     "command-prefix": "command prefix",
+	"custom-activity": "",
     "local-channel-id": "000000000000000000",
     "create-category-id": "000000000000000000",
     "admin-id-1": "000000000000000000",
     "admin-id-2": "000000000000000000",
-	"debug-mode": "true",
+	"picture-only-channel-id": "000000000000000000",
+	
+	"debug-mode": "false",
 
     "command-gay": "true",
     "command-time": "true",
@@ -14,5 +17,6 @@
     "command-tlm": "true",
     "command-copy": "true",
     "command-reload": "true",
-    "command-chlang": "true"
+    "command-chlang": "true",
+    "command-chact": "true"
 }
