@@ -4,6 +4,8 @@ Features
 ---
 **I. Temporary Voice Channel**
 
+**II. Picture Only Channel**
+
 Setup
 ----
 Setting up the Discord Bot is relatively painless,
