@@ -37,7 +37,7 @@ def check(data):
         print('load admin-id setting --- ok')
 
     if data['local-channel-id'] == '' or data['create-category-id'] == '' or data['picture-only-channel-id'] == '':
-        print('load channel-id setting --- fail')
+        print('load channel-id setting --- fail',end='\n\n')
         error()
     else:
-        print('load channel-id setting --- ok')
+        print('load channel-id setting --- ok',end='\n\n')

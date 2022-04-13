@@ -20,10 +20,10 @@ else:
 
 check_lang = os.path.isdir('lang/')
 if check_lang == False:
-    print('load lang folder --- fail')
+    print('load lang folder --- fail',end='\n\n')
     self_test.error()
 else:
-    print('load lang folder --- ok')
+    print('load lang folder --- ok',end='\n\n')
 
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
