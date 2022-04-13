@@ -1,7 +1,7 @@
 {
-	"language": "language",
-    "token": "your bot token",
-    "command-prefix": "command prefix",
+	"language": "",
+    "token": "",
+    "command-prefix": "",
 	"custom-activity": "",
     "local-channel-id": "000000000000000000",
     "create-category-id": "000000000000000000",
