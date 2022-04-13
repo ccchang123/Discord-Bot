@@ -7,19 +7,13 @@ import sys
 import json
 import logging
 import tracemalloc
-import error_code, lang
+import error_code, lang, self_test
 
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
 
+self_test.check(data)
 Lang = lang.lang_chose(data['language'])
-now = datetime.now()
-date_time = '<'+now.strftime("%Y-%m-%d, %H:%M:%S")+'>'
-prefix = data['command-prefix']
-client = discord.Client()
-intents = discord.Intents.all()
-
-tracemalloc.start()
 
 if data['debug-mode'] == 'true':
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
@@ -27,6 +21,14 @@ if data['debug-mode'] == 'true':
     print(Lang['debug-enabled'])
 else:
     print(Lang['debug-disabled'])
+
+now = datetime.now()
+date_time = '<'+now.strftime("%Y-%m-%d, %H:%M:%S")+'>'
+prefix = data['command-prefix']
+client = discord.Client()
+intents = discord.Intents.all()
+
+tracemalloc.start()
 
 @client.event
 async def on_ready():
