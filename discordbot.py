@@ -28,12 +28,12 @@ else:
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
 
+self_test.check(data)
 Lang = lang.lang_chose(data['language'])
 
 if data['debug-mode'] == 'true':
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
     logging.basicConfig(level=logging.NOTSET, filename='BotLog.log', filemode='w', format=FORMAT)
-    self_test.check(data)
     print(Lang['debug-enabled'])
 else:
     print(Lang['debug-disabled'])
