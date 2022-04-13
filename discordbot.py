@@ -1,23 +1,39 @@
 import discord
 from datetime import datetime
-from discord.ext import commands
+from discord.ext import tasks, commands
 import random
 import asyncio
 import sys
 import json
+import os
 import logging
 import tracemalloc
-import error_code, lang, self_test
+import error_code, self_test
+
+check_config = os.path.isfile('config.json')
+if check_config == False:
+    print('load config file --- fail')
+    self_test.error()
+else:
+    print('load config file --- ok')
+    import lang
+
+check_lang = os.path.isdir('lang/')
+if check_lang == False:
+    print('load lang folder --- fail')
+    self_test.error()
+else:
+    print('load lang folder --- ok')
 
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
 
-self_test.check(data)
 Lang = lang.lang_chose(data['language'])
 
 if data['debug-mode'] == 'true':
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
     logging.basicConfig(level=logging.NOTSET, filename='BotLog.log', filemode='w', format=FORMAT)
+    self_test.check(data)
     print(Lang['debug-enabled'])
 else:
     print(Lang['debug-disabled'])
@@ -65,7 +81,7 @@ async def on_message(message):
         admin = True
     if message.author == client.user:
         return
-
+    
     if message.content.startswith(prefix+'gay') and data['command-gay'] == 'true':
         gay_temp = message.content.split(" ",2)
         if len(gay_temp) == 1:
@@ -145,7 +161,10 @@ async def on_message(message):
         if admin == True:
             await message.delete()
             chlang_temp = message.content.split(" ",2)
-            if len(chlang_temp) == 1 or len(chlang_temp) >= 3:
+            checked = await lang.chlang_check(message, chlang_temp[1], Lang)
+            if checked == False:
+                return
+            elif len(chlang_temp) == 1 or len(chlang_temp) >= 3:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'chlang '+Lang['language'], color=0x4b49d8)
                 embed.add_field(name=Lang['uses'], value=Lang['change-lang-message'], inline=False)
                 chlang_error_message = await message.channel.send(embed=embed)
@@ -182,7 +201,5 @@ async def on_message(message):
             await message.reply(Lang['unknown-command'], mention_author=True)
     if message.channel.id == int(data['picture-only-channel-id']) and message.content != "":
         await message.channel.purge(limit=1)
-
-
 
 client.run(data['token'])
