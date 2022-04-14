@@ -26,4 +26,6 @@ Reload Bot
 ----
 Reload the config and language setting in Discord-Bot is very easy.
 
+💥No need to restart! 
+
 Just use "reload" command in discord!
