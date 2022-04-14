@@ -18,5 +18,6 @@
     "command-copy": "true",
     "command-reload": "true",
     "command-chlang": "true",
-    "command-chact": "true"
+    "command-chact": "true",
+    "command-clear": "true"
 }

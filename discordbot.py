@@ -41,22 +41,27 @@ else:
 now = datetime.now()
 date_time = '<'+now.strftime("%Y-%m-%d, %H:%M:%S")+'>'
 prefix = data['command-prefix']
-client = discord.Client()
 intents = discord.Intents.all()
+bot = commands.Bot(command_prefix=data['command-prefix'])
 
 tracemalloc.start()
 
-@client.event
+@bot.event
 async def on_ready():
-    print(date_time, Lang['login-name'], client.user)
+    print(date_time, Lang['login-name'], bot.user)
     if data['custom-activity'] != '':
         game = discord.Game(data['custom-activity'])
     else:
         game = discord.Game(date_time)
     #online,offline,idle,dnd,invisible
-    await client.change_presence(status=discord.Status.online, activity=game)
+    await bot.change_presence(status=discord.Status.online, activity=game)
+
+@bot.command()
+async def time(ctx):
+    await ctx.reply(date_time, mention_author=True)
+    return
     
-@client.event
+@bot.event
 async def on_voice_state_update(member, before, after):
     channel = after.channel
     try:
@@ -73,37 +78,57 @@ async def on_voice_state_update(member, before, after):
         await voice_channel.set_permissions(member, manage_channels=True, manage_permissions=True)
         print(date_time, member.name, Lang['when-channel-create'])
 
-@client.event
+@bot.command()
+async def clear(ctx, limit=0, member: discord.Member=None):
+    if ctx.author.id== int(data['admin-id-1']) or ctx.author.id== int(data['admin-id-2']):
+        if data['command-clear'] == 'true':
+            await ctx.message.delete()
+            if limit == 0:
+                embed = discord.Embed(title=Lang['usage'], description='', color=0x4b49d8)
+                embed.add_field(name=prefix+'clear '+Lang['count'], value=Lang['message-clear-tip']+Lang['count']+Lang['message-clear-tip-count'], inline=False)
+                embed.add_field(name=prefix+'clear '+Lang['count']+Lang['@user'], value=Lang['message-clear-tip']+Lang['@user']+Lang["someone's"]+' '+Lang['count']+Lang['message-clear-tip-count'], inline=False)
+                await ctx.channel.send(embed=embed, delete_after=3)
+                return
+            msg = []
+            if not member:
+                await ctx.channel.purge(limit=limit)
+                return await ctx.send(str(limit)+Lang['message-cleared'], delete_after=3)
+            async for m in ctx.channel.history():
+                if len(msg) == limit:
+                    break
+                if m.author == member:
+                    msg.append(m)
+            await ctx.channel.delete_messages(msg)
+            await ctx.send(str(member.mention)+Lang["someone's"]+' '+str(limit)+Lang['message-cleared'], delete_after=3)
+    else:
+        await error_code.permission(ctx, Lang)
+
+@bot.event
 async def on_message(message):
     global data, prefix, Lang
     admin = False
     if message.author.id== int(data['admin-id-1']) or message.author.id== int(data['admin-id-2']):
         admin = True
-    if message.author == client.user:
+    if message.author == bot.user:
         return
-    
     if message.content.startswith(prefix+'gay') and data['command-gay'] == 'true':
         gay_temp = message.content.split(" ",2)
         if len(gay_temp) == 1:
             embed = discord.Embed(title=Lang['usage'], description=prefix+'gay '+Lang['@user'], color=0x4b49d8)
-            gay_error_message = await message.channel.send(embed=embed)
+            await message.channel.send(embed=embed, delete_after=3)
             await asyncio.sleep(5)
             await message.delete()
-            await gay_error_message.delete()
         else:
             embed = discord.Embed(title=message.mentions[0].name+' #'+message.mentions[0].discriminator, description=str(random.randrange(100))+'% gay', color=0x4b49d8)
             gay_message = await message.channel.send(embed=embed)
             await asyncio.sleep(5)
             await message.delete()
             await gay_message.delete()
-    if message.content.startswith(prefix+'time') and data['command-time'] == 'true':
-        await message.reply(date_time, mention_author=True)
-        return
     if message.content.startswith(prefix+'exit') and data['command-exit'] == 'true':
         if admin == True:
             await message.delete()
             game = discord.Game(date_time)
-            await client.change_presence(status=discord.Status.offline, activity=game)
+            await bot.change_presence(status=discord.Status.offline, activity=game)
             sys.exit()
         else:
             await error_code.permission(message, Lang)
@@ -114,17 +139,13 @@ async def on_message(message):
             if len(time_limit_message_temp) == 1:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'tlm '+Lang['message'], color=0x4b49d8)
                 embed.add_field(name=Lang['uses'], value=Lang['temp-message'], inline=False)
-                time_limit_error_message = await message.channel.send(embed=embed)
-                await asyncio.sleep(10)
-                await time_limit_error_message.delete()   
+                message.channel.send(embed=embed, delete_after=3)
             else:
                 text = time_limit_message_temp[1]+' '
                 for i in range(2, len(time_limit_message_temp)):
                     text += time_limit_message_temp[i]
-                time_limit_message = await message.channel.send(text)
+                await message.channel.send(text, delete_after=600)
                 print(date_time, message.author,Lang['sent-temp-message'],text)
-                await asyncio.sleep(600)
-                await time_limit_message.delete()
         else:
             await error_code.permission(message, Lang)
     if message.content.startswith(prefix+'copy') and data['command-copy'] == 'true':
@@ -146,7 +167,6 @@ async def on_message(message):
         if admin == True:
             print(date_time, Lang['reloaded'])
             await message.delete()
-            await message.channel.send(Lang['reloaded'])
             data = json.load(open('config.json'))
             prefix = data['command-prefix']
             Lang = lang.lang_chose(data['language'])
@@ -154,7 +174,8 @@ async def on_message(message):
                 game = discord.Game(data['custom-activity'])
             else:
                 game = discord.Game(date_time)
-            await client.change_presence(status=discord.Status.online, activity=game)
+            await bot.change_presence(status=discord.Status.online, activity=game)
+            await message.channel.send(Lang['reloaded'])
         else:
             await error_code.permission(message, Lang)
     if message.content.startswith(prefix+'chlang') and data['command-chlang'] == 'true':
@@ -191,15 +212,12 @@ async def on_message(message):
                 for i in range(2, len(chact_temp)):
                     chact += chact_temp[i]
                 game = discord.Game(chact)
-                await client.change_presence(status=discord.Status.online, activity=game)
+                await bot.change_presence(status=discord.Status.online, activity=game)
                 await message.channel.send(Lang['activity-changed']+' '+chact)
         else:
             await error_code.permission(message, Lang)
-    if message.content.startswith(prefix):
-        temp = message.content.split(" ",2)
-        if len(temp) == 1:
-            await message.reply(Lang['unknown-command'], mention_author=True)
     if message.channel.id == int(data['picture-only-channel-id']) and message.content != "":
         await message.channel.purge(limit=1)
+    await bot.process_commands(message)
 
-client.run(data['token'])
+bot.run(data['token'])
