@@ -10,13 +10,18 @@
     "lang-changed": " 语言已更改!",
     "activity-changed": " 机器人状态已更改为",
     "reloaded": " 设定档及语言档已重新加载!",
-    "unknown-command": " 未知的指令",
     "permission-error": " 你没有权限!",
     "language-error": " 该语言档不存在!",
+    "message-clear-tip": "刪除 ",
+    "message-clear-tip-count": " 則訊息",
+    "message-cleared": " 则讯息已被删除!",
+    
     "debug-enabled": " 侦错模式: 开启",
     "debug-disabled": " 侦错模式: 关闭",
 
     "@user": " <@使用者>",
     "message": " <讯息>",
-    "language": " <语言>"
+    "language": " <语言档名称>",
+    "count": "<数量>",
+    "someone's": " 的"
 }

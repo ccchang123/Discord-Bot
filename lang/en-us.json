@@ -7,16 +7,21 @@
     "temp-message": " Send a temp message",
     "sent-temp-message": " Sent a temp message:",
     "change-lang-message": " Change language",
-    "lang-changed": " Language has been changed!",
-    "activity-changed": " activity of bot has been changed to",
-    "reloaded": " Config and language has been reloaded!",
-    "unknown-command": " Unknown command",
+    "lang-changed": " Language have been changed!",
+    "activity-changed": " activity of bot have been changed to",
+    "reloaded": " Config and language have been reloaded!",
     "permission-error": " You do not have any permission!",
     "language-error": " This language file does not exist!",
+    "message-clear-tip": "Delete ",
+    "message-clear-tip-count": " message",
+    "message-cleared": " messages have been deleted!",
+
     "debug-enabled": " Debug mode: enabled",
     "debug-disabled": " Debug mode: disabled",
 
     "@user": " <@user>",
     "message": " <message>",
-    "language": " <language>"
+    "language": " <language file name>",
+    "count": "<count>",
+    "someone's": "'s"
 }
