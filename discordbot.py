@@ -1,4 +1,3 @@
-from glob import glob
 import discord
 from datetime import datetime
 from discord.ext import tasks, commands
