@@ -8,6 +8,8 @@ Features
 
 **III. Self Test**
 
+**IV. Server management**
+
 more features can be seen in the [commands](https://github.com/ccchang123/Discord-Bot/wiki/commands) and [config](https://github.com/ccchang123/Discord-Bot/wiki/config) wiki.
 
 Setup
