@@ -18,16 +18,26 @@ async def chlang_check(message, lang, Lang):
         if data['debug-mode'] == 'true':
             print('load '+lang+' file --- ok')
 
+def file_list():
+    for i in os.listdir('lang'):
+        if i.endswith(".json"):
+            print('find the language file:',i)
+
 def lang_chose(sele):
     for i in language_list:
         if sele == i:
             select = 'lang/'+i+'.json'
             check_config = os.path.isfile(select)
             if check_config == False:
-                print('load '+i+' file --- fail',end='\n\n')
-                self_test.error()
+                if data['debug-mode'] == 'true':
+                    file_list()
+                    print('load '+i+' file --- fail',end='\n\n')
+                    self_test.error()
             else:
-                print('load '+i+' file --- ok',end='\n\n')
                 with open(select, "r", encoding = "utf8") as lang_file:
                     language = json.load(lang_file)
+                if data['debug-mode'] == 'true':
+                    file_list()
+                    print('load '+i+' file --- ok',end='\n\n')
     return language
+

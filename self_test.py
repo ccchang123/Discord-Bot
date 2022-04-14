@@ -19,25 +19,33 @@ def check(data):
         error()
 
     if data['token'] != '':
-        print('load token setting --- ok')
+        if data['debug-mode'] == 'true':
+            print('load token setting --- ok')
     else:
-        print('load token setting --- fail')
-        error()
-    
+        if data['debug-mode'] == 'true':
+            print('load token setting --- fail')
+            error()
+
     if data['command-prefix'] != '':
-        print('load command-prefix setting --- ok')
+        if data['debug-mode'] == 'true':
+            print('load command-prefix setting --- ok')
     else:
-        print('load command-prefix setting --- fail')
-        error()
+        if data['debug-mode'] == 'true':
+            print('load command-prefix setting --- fail')
+            error()
     
     if data['admin-id-1'] == '' or data['admin-id-2'] == '' or data['owner-id'] == '':
-        print('load admin-id setting --- fail')
+        if data['debug-mode'] == 'true':
+            print('load admin-id setting --- fail')
         error()
     else:
-        print('load admin-id setting --- ok')
+        if data['debug-mode'] == 'true':
+            print('load admin-id setting --- ok')
 
     if data['local-channel-id'] == '' or data['create-category-id'] == '' or data['picture-only-channel-id'] == '':
-        print('load channel-id setting --- fail',end='\n\n')
+        if data['debug-mode'] == 'true':
+           print('load channel-id setting --- fail',end='\n\n')
         error()
     else:
-        print('load channel-id setting --- ok',end='\n\n')
+        if data['debug-mode'] == 'true':
+            print('load channel-id setting --- ok',end='\n\n')
