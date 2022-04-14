@@ -12,9 +12,15 @@
     "reloaded": " Config and language have been reloaded!",
     "permission-error": " You do not have any permission!",
     "language-error": " This language file does not exist!",
+    "reset-error": " This command needs to enable debug mode to execute!",
+    "not-owner": " This command can only be executed by the server owner!",
     "message-clear-tip": "Delete ",
     "message-clear-tip-count": " message",
     "message-cleared": " messages have been deleted!",
+
+    "menu-name": "Commands list",
+    "menu-select": "Please select one...",
+    "selected": "Selected :  ",
 
     "debug-enabled": " Debug mode: enabled",
     "debug-disabled": " Debug mode: disabled",

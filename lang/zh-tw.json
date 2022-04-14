@@ -12,9 +12,15 @@
     "reloaded": " 設定檔及語言檔已重新加載!",
     "permission-error": " 你沒有權限!",
     "language-error": " 該語言檔不存在!",
+    "reset-error": " 此指令需開啟偵錯模式才能執行!",
+    "not-owner": " 此指令只有伺服器擁有者才能執行!",
     "message-clear-tip": "刪除 ",
     "message-clear-tip-count": " 則訊息",
     "message-cleared": " 則訊息已被刪除!",
+
+    "menu-name": "指令列表",
+    "menu-select": "請選擇一項...",
+    "selected": "已選擇  ",
 
     "debug-enabled": " 偵錯模式: 開啟",
     "debug-disabled": " 偵錯模式: 關閉",
