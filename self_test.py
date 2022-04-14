@@ -30,7 +30,7 @@ def check(data):
         print('load command-prefix setting --- fail')
         error()
     
-    if data['admin-id-1'] == '' or data['admin-id-2'] == '':
+    if data['admin-id-1'] == '' or data['admin-id-2'] == '' or data['owner-id'] == '':
         print('load admin-id setting --- fail')
         error()
     else:
