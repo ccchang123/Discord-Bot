@@ -3,7 +3,7 @@ import json
 config = {
     "language": "",
     "token": "",
-    "command-prefix": ".",
+    "command-prefix": "",
     "custom-activity": "",
     "owner-id": "000000000000000000",
     "admin-id-1": "000000000000000000",
@@ -14,19 +14,32 @@ config = {
 
     "debug-mode": "false",
 
-    "command-gay": "true",
-    "command-time": "true",
-    "command-exit": "true",
-    "command-tlm": "true",
-    "command-copy": "true",
-    "command-reload": "true",
+    "command-ban": "true",
+    "command-clear": "true",
     "command-chlang": "true",
     "command-chact": "true",
-    "command-clear": "true",
-    "command-reset": "true"
+    "command-copy": "true",
+    "command-clearwarn": "true",
+    "command-exit": "true",
+    "command-gay": "true",
+    "command-kick": "true",
+    "command-reload": "true",
+    "command-showwarn": "true",
+    "command-reset": "true",
+    "command-time": "true",
+    "command-tlm": "true",
+    "command-unban": "true",
+    "command-warn": "true"
+}
+
+warns = {
+
 }
 
 def reset_config():
-    reset = json.dumps(config, indent = 4)
-    with open("config.json", "w") as outfile:
-        outfile.write(reset)
+    reset_config = json.dumps(config, indent = 4)
+    reset_warns = json.dumps(warns, indent = 4)
+    with open("config.json", "w") as config_file:
+        config_file.write(reset_config)
+    with open("warns.json", "w") as warns_file:
+        warns_file.write(reset_warns)

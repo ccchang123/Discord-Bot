@@ -12,14 +12,20 @@
 
     "debug-mode": "false",
 
+    "command-ban": "true",
     "command-clear": "true",
     "command-chlang": "true",
     "command-chact": "true",
     "command-copy": "true",
+    "command-clearwarn": "true",
     "command-exit": "true",
     "command-gay": "true",
+    "command-kick": "true",
     "command-reload": "true",
+    "command-showwarn": "true",
+    "command-reset": "true",
     "command-time": "true",
     "command-tlm": "true",
-    "command-reset": "true"
+    "command-unban": "true",
+    "command-warn": "true"
 }
