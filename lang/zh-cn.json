@@ -17,6 +17,14 @@
     "message-clear-tip": "刪除 ",
     "message-clear-tip-count": " 則訊息",
     "message-cleared": " 则讯息已被删除!",
+    "user-banned": " 已被封锁!",
+    "user-unbanned": " 已解除封锁!",
+    "user-kicked": " 已被踢出伺服器!",
+    "user-warned": " 已被警告!",
+    "warn-reason": " 原因:",
+    "warn-amount": " 警告次数:",
+    "user-nowarn": " 该用户没有警告",
+    "warn-cleared-all": " 已清除所有警告",
 
     "menu-name": "指令列表",
     "menu-select": "请选择一项...",
@@ -25,9 +33,10 @@
     "debug-enabled": " 侦错模式: 开启",
     "debug-disabled": " 侦错模式: 关闭",
 
-    "@user": " <@使用者>",
-    "message": " <讯息>",
-    "language": " <语言档名称>",
-    "count": "<数量>",
+    "@user": " [@使用者]",
+    "message": " [讯息]",
+    "language": " [语言档名称]",
+    "count": " [数量]",
+    "reason": " (原因)",
     "someone's": " 的"
 }

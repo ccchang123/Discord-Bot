@@ -17,6 +17,14 @@
     "message-clear-tip": "Delete ",
     "message-clear-tip-count": " message",
     "message-cleared": " messages have been deleted!",
+    "user-banned": " has been successfully banned!",
+    "user-unbanned": " has been successfully unbanned!",
+    "user-kicked": " has been successfully kicked!",
+    "user-warned": " Has been warned!",
+    "warn-reason": " Reason:",
+    "warn-amount": " Now warn amount:",
+    "user-nowarn": " This user has no warnings.",
+    "warn-cleared-all": " All warnings has been successfully cleared.",
 
     "menu-name": "Commands list",
     "menu-select": "Please select one...",
@@ -25,9 +33,10 @@
     "debug-enabled": " Debug mode: enabled",
     "debug-disabled": " Debug mode: disabled",
 
-    "@user": " <@user>",
-    "message": " <message>",
-    "language": " <language file name>",
-    "count": "<count>",
+    "@user": " [@user]",
+    "message": " [message]",
+    "language": " [language file name]",
+    "count": " [count]",
+    "reason": " (reason)",
     "someone's": "'s"
 }
