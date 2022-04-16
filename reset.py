@@ -14,6 +14,7 @@ config = {
 
     "debug-mode": "false",
 
+    "command-addbypass": "true",
     "command-ban": "true",
     "command-clear": "true",
     "command-chlang": "true",
@@ -29,17 +30,28 @@ config = {
     "command-time": "true",
     "command-tlm": "true",
     "command-unban": "true",
-    "command-warn": "true"
+    "command-uinfo": "true",
+    "command-warn": "true",
+
+    "music-bot": "true"
 }
 
 warns = {
 
 }
 
+bypass = {
+    "It is a example_1": "000000000000000000",
+    "It is a example_2": "000000000000000000"
+}
+
 def reset_config():
     reset_config = json.dumps(config, indent = 4)
     reset_warns = json.dumps(warns, indent = 4)
+    reset_bypass = json.dumps(bypass, indent = 4)
     with open("config.json", "w") as config_file:
         config_file.write(reset_config)
     with open("warns.json", "w") as warns_file:
         warns_file.write(reset_warns)
+    with open("bypass.json", "w") as bypass_file:
+        bypass_file.write(reset_bypass)

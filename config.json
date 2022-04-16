@@ -12,6 +12,7 @@
 
     "debug-mode": "false",
 
+    "command-addbypass": "true",
     "command-ban": "true",
     "command-clear": "true",
     "command-chlang": "true",
@@ -27,5 +28,8 @@
     "command-time": "true",
     "command-tlm": "true",
     "command-unban": "true",
-    "command-warn": "true"
+    "command-uinfo": "true",
+    "command-warn": "true",
+
+    "music-bot": "true"
 }

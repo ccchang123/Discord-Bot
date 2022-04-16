@@ -1,7 +1,8 @@
 import discord
 from datetime import datetime
-from discord.ext import tasks, commands
+from discord.ext import commands, tasks
 from discord_components import *
+import time
 import random
 import asyncio
 import sys
@@ -9,6 +10,8 @@ import json
 import os
 import logging
 import tracemalloc
+import youtube_dl
+import mechanize
 import error_code, self_test, reset
 
 print('Copyright © 2022 cc_chang.','All rights reserved.',sep='\n' ,end='\n\n')
@@ -39,8 +42,26 @@ else:
 
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
+admin_list = [int(data['owner-id']), int(data['admin-id-1']), int(data['admin-id-2'])]
+
+for i in admin_list:
+    if data['debug-mode'] == 'true':
+        if i == 0:
+            print('admin id:', i, '(disable)')
+        else:
+            print('admin id:', i)
+
+with open('bypass.json', "r", encoding = "utf8") as file:
+    bypass = json.load(file)
+data_list = list(bypass.items())
+bypass_list = []
+for j in data_list:
+    if data['debug-mode'] == 'true':
+        print('Bypass user:', j[0]+', id: '+j[1])
+    bypass_list.append(int(j[1]))
 
 self_test.check(data)
+
 Lang = lang.lang_chose(data['language'])
 
 if data['debug-mode'] == 'true':
@@ -65,79 +86,91 @@ async def main_menu(ctx):
     await ctx.send(content=Lang['menu-name'], components=[Select(
                                                 placeholder=Lang['menu-select'],
                                                 options= [
-                                                    SelectOption(label=prefix+'ban',value=prefix+'ban'),
-                                                    SelectOption(label=prefix+'clear',value=prefix+'clear'),
-                                                    SelectOption(label=prefix+'chlang',value=prefix+'chlang'),
-                                                    SelectOption(label=prefix+'chact',value=prefix+'chact'),
-                                                    SelectOption(label=prefix+'copy',value=prefix+'copy'),
-                                                    SelectOption(label=prefix+'copy -d',value=prefix+'copy'+'-d'),
-                                                    SelectOption(label=prefix+'clearwarn',value=prefix+'clearwarn'),
-                                                    SelectOption(label=prefix+'exit',value=prefix+'exit'),
-                                                    SelectOption(label=prefix+'gay',value=prefix+'gay'),
-                                                    SelectOption(label=prefix+'kick',value=prefix+'kick'),
-                                                    SelectOption(label=prefix+'reload',value=prefix+'reload'),
-                                                    SelectOption(label=prefix+'showwarn',value=prefix+'showwarn'),
-                                                    SelectOption(label=prefix+'time',value=prefix+'time'),
-                                                    SelectOption(label=prefix+'tlm',value=prefix+'tlm'),
-                                                    SelectOption(label=prefix+'unban',value=prefix+'unban'),
-                                                    SelectOption(label=prefix+'warn',value=prefix+'warn')
+                                                    SelectOption(label=prefix+'addbypass', value=prefix+'addbypass', description=Lang['menu-message-addbypass'], emoji='✅'),
+                                                    SelectOption(label=prefix+'ban', value=prefix+'ban', description=Lang['menu-message-ban'], emoji='🚫'),
+                                                    SelectOption(label=prefix+'clear', value=prefix+'clear', description=Lang['menu-message-clear'], emoji='🗑'),
+                                                    SelectOption(label=prefix+'chlang', value=prefix+'chlang', description=Lang['menu-message-chlang'], emoji='🇺🇳'),
+                                                    SelectOption(label=prefix+'chact', value=prefix+'chact', description=Lang['menu-message-chact'], emoji='🎊'),
+                                                    SelectOption(label=prefix+'copy', value=prefix+'copy', description=Lang['menu-message-copy'], emoji='✂'),
+                                                    SelectOption(label=prefix+'copy -d', value=prefix+'copy'+'-d', description=Lang['menu-message-copy-delete'], emoji='✂'),
+                                                    SelectOption(label=prefix+'clearwarn', value=prefix+'clearwarn', description=Lang['menu-message-clearwarn'], emoji='🗑'),
+                                                    SelectOption(label=prefix+'exit', value=prefix+'exit', description=Lang['menu-message-exit'], emoji='⏹'),
+                                                    SelectOption(label=prefix+'gay', value=prefix+'gay', description=Lang['menu-message-gay'], emoji='👨‍❤️‍👨'),
+                                                    SelectOption(label=prefix+'kick', value=prefix+'kick', description=Lang['menu-message-kick'], emoji='🦵'),
+                                                    SelectOption(label=prefix+'reload', value=prefix+'reload', description=Lang['menu-message-reload'], emoji='🔄'),
+                                                    SelectOption(label=prefix+'showwarn', value=prefix+'showwarn', description=Lang['menu-message-showwarn'], emoji='📄'),
+                                                    SelectOption(label=prefix+'time', value=prefix+'time', description=Lang['menu-message-time'], emoji='⏱'),
+                                                    SelectOption(label=prefix+'tlm', value=prefix+'tlm', description=Lang['menu-message-tlm'], emoji='📨'),
+                                                    SelectOption(label=prefix+'unban', value=prefix+'unban', description=Lang['menu-message-unban'], emoji='⭕'),
+                                                    SelectOption(label=prefix+'uinfo', value=prefix+'uinfo', description=Lang['menu-message-uinfo'], emoji='🕵️'),
+                                                    SelectOption(label=prefix+'warn', value=prefix+'warn', description=Lang['menu-message-warn'], emoji='⚠')
                                                 ],
                                                 custom_id='main_menu'
     )])
-    interaction = await bot.wait_for('select_option', check=lambda inter: inter.custom_id == 'main_menu' and inter.user == ctx.author)
-    res = interaction.values[0]
-    if res == prefix+'time':
-        await interaction.send(Lang['selected']+res)
-        await time(ctx)
-    elif res == prefix+'clear':
-        embed = discord.Embed(title=Lang['usage'], description='', color=0xEC2E2E)
-        embed.add_field(name=prefix+'clear '+Lang['count'], value=Lang['message-clear-tip']+Lang['count']+Lang['message-clear-tip-count'], inline=False)
-        embed.add_field(name=prefix+'clear '+Lang['count']+Lang['@user'], value=Lang['message-clear-tip']+Lang['@user']+Lang["someone's"]+' '+Lang['count']+Lang['message-clear-tip-count'], inline=False)
-        await interaction.send(embed=embed)
-    elif res == prefix+'chlang':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'chlang '+Lang['language'], color=0xEC2E2E)
-        embed.add_field(name=Lang['uses'], value=Lang['change-lang-message'], inline=False)
-        await interaction.send(embed=embed)
-    elif res == prefix+'chact':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'chact '+Lang['message'], color=0xEC2E2E)
-        await interaction.send(embed=embed)
-    elif res == prefix+'copy':
-        await interaction.send(Lang['selected']+res)
-        await copy(ctx)
-    elif res == prefix+'copy'+'-d':
-        await interaction.send(Lang['selected']+res)
-        await copy(ctx, '-d')
-    elif res == prefix+'gay':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'gay '+Lang['@user'], color=0xEC2E2E)
-        await interaction.send(embed=embed)
-    elif res == prefix+'exit':
-        await interaction.send(Lang['selected']+res)
-        await exit(ctx)
-    elif res == prefix+'reload':
-        await interaction.send(Lang['selected']+res)
-        await reload(ctx)
-    elif res == prefix+'tlm':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'tlm '+Lang['message'], color=0xEC2E2E)
-        embed.add_field(name=Lang['uses'], value=Lang['temp-message'], inline=False)
-        await interaction.send(embed=embed)
-    elif res == prefix+'ban':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'ban '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
-        await interaction.send(embed=embed)
-    elif res == prefix+'unban':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'unban '+Lang['@user'], color=0xEC2E2E)
-        await interaction.send(embed=embed)
-    elif res == prefix+'kick':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user'], color=0xEC2E2E)
-        await interaction.send(embed=embed)
-    elif res == prefix+'clearwarn':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'clearwarn '+Lang['@user']+' (-a)', color=0xEC2E2E)
-        await interaction.send(embed=embed)
-    elif res == prefix+'showwarn':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'showwarn '+Lang['@user'], color=0xEC2E2E)
-        await interaction.send(embed=embed)
-    elif res == prefix+'warn':
-        embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
-        await interaction.send(embed=embed)
+    while True:
+        interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'main_menu' and inter.user == ctx.author)
+        res = interaction.values[0]
+        try:
+            if res == prefix+'time':
+                await interaction.send(Lang['selected']+res)
+                await time(ctx)
+            elif res == prefix+'clear':
+                embed = discord.Embed(title=Lang['usage'], description='', color=0xEC2E2E)
+                embed.add_field(name=prefix+'clear '+Lang['count'], value=Lang['message-clear-tip']+Lang['count']+Lang['message-clear-tip-count'], inline=False)
+                embed.add_field(name=prefix+'clear '+Lang['count']+Lang['@user'], value=Lang['message-clear-tip']+Lang['@user']+Lang["someone's"]+' '+Lang['count']+Lang['message-clear-tip-count'], inline=False)
+                await interaction.send(embed=embed)
+            elif res == prefix+'chlang':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'chlang '+Lang['language'], color=0xEC2E2E)
+                embed.add_field(name=Lang['uses'], value=Lang['change-lang-message'], inline=False)
+                await interaction.send(embed=embed)
+            elif res == prefix+'chact':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'chact '+Lang['message'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'copy':
+                await interaction.send(Lang['selected']+res)
+                await copy(ctx)
+            elif res == prefix+'copy'+'-d':
+                await interaction.send(Lang['selected']+res)
+                await copy(ctx, '-d')
+            elif res == prefix+'gay':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'gay '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'exit':
+                await interaction.send(Lang['selected']+res)
+                await exit(ctx)
+            elif res == prefix+'reload':
+                await interaction.send(Lang['selected']+res)
+                await reload(ctx)
+            elif res == prefix+'tlm':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'tlm '+Lang['message'], color=0xEC2E2E)
+                embed.add_field(name=Lang['uses'], value=Lang['temp-message'], inline=False)
+                await interaction.send(embed=embed)
+            elif res == prefix+'ban':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'ban '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'unban':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'unban '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'kick':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'clearwarn':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'clearwarn '+Lang['@user']+' (-a)', color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'showwarn':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'showwarn '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'warn':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'addbypass':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'addbypass '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'uinfo':
+                await interaction.send(Lang['selected']+res)
+                await uinfo(ctx)
+        except:
+            pass
 
 @bot.event
 async def on_ready():
@@ -158,37 +191,61 @@ async def on_voice_state_update(member, before, after):
                 await before.channel.delete()
     except:
         pass
+    if channel == None:
+        return
     if channel.id == int(data['local-channel-id']):
         guild = after.channel.guild
         private_channels = discord.utils.get(guild.categories, id= int(data['create-category-id']))
         voice_channel = await guild.create_voice_channel(member.name + Lang['create-channel-name'], overwrites=None, category=private_channels, user_limit = 5)
         await member.move_to(voice_channel)
         await voice_channel.set_permissions(member, manage_channels=True, manage_permissions=True)
-        await voice_channel.set_user_limit(5)
-        print(now_time(), member.name, Lang['when-channel-create'])
+        print(now_time(), member, Lang['when-channel-create'])
 
 @bot.command()
 async def menu(ctx):
     await main_menu(ctx)
 
 @bot.command()
+async def addbypass(ctx, user: discord.Member=None):
+    if data['command-addbypass'] == 'true':
+        if ctx.author.id in admin_list:
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'addbypass '+Lang['@user'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                with open('bypass.json', 'r') as f:
+                    warns = json.load(f)
+                    warns[str(user)] = str(user.id)
+                    with open('bypass.json', 'w') as f:
+                        json.dump(warns, f, indent = 4)
+                embed=discord.Embed(title=str(user)+Lang['bypass-added'])
+                await ctx.channel.send(embed=embed)
+                print(now_time(), str(user)+Lang['bypass-added'])
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
 async def ban(ctx, user: discord.Member=None, *, reason=''):
     if data['command-ban'] == 'true':
         await ctx.message.delete()
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'ban '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
+            elif user.id in admin_list or user.id in bypass_list:
+                embed = discord.Embed(title=Lang['user-bypassed'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed)
             else:
                 await ctx.guild.ban(user, reason=reason)
                 await ctx.channel.send(str(user)+Lang['user-banned'])
+                print(now_time(), str(user), Lang['user-banned'])
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
 async def clear(ctx, limit=0, member: discord.Member=None):
     if data['command-clear'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             await ctx.message.delete()
             if limit == 0:
                 embed = discord.Embed(title=Lang['usage'], description='', color=0xEC2E2E)
@@ -199,6 +256,7 @@ async def clear(ctx, limit=0, member: discord.Member=None):
             msg = []
             if not member:
                 await ctx.channel.purge(limit=limit)
+                print(now_time(), str(limit), Lang['message-cleared'])
                 return await ctx.send(str(limit)+Lang['message-cleared'], delete_after=3)
             async for m in ctx.channel.history():
                 if len(msg) == limit:
@@ -207,6 +265,7 @@ async def clear(ctx, limit=0, member: discord.Member=None):
                     msg.append(m)
             await ctx.channel.delete_messages(msg)
             await ctx.send(str(member.mention)+Lang["someone's"]+' '+str(limit)+Lang['message-cleared'], delete_after=3)
+            print(now_time(), str(member.mention), Lang["someone's"], str(limit), Lang['message-cleared'])
     else:
         await error_code.permission(ctx, Lang)
 
@@ -214,7 +273,7 @@ async def clear(ctx, limit=0, member: discord.Member=None):
 async def chlang(ctx, language=''):
     global Lang
     if data['command-chlang'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             await ctx.message.delete()
             if language == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'chlang '+Lang['language'], color=0xEC2E2E)
@@ -228,13 +287,14 @@ async def chlang(ctx, language=''):
                 with open(chlang, "r", encoding = "utf8") as lang_file:
                     Lang = json.load(lang_file)
                 await ctx.channel.send(Lang['lang-changed'])
+                print(now_time(), Lang['lang-changed'], language)
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
 async def chact(ctx, *, act=''):
     if data['command-chact'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             await ctx.message.delete()
             if act == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'chact '+Lang['message'], color=0xEC2E2E)
@@ -243,26 +303,29 @@ async def chact(ctx, *, act=''):
                 game = discord.Game(act)
                 await bot.change_presence(status=discord.Status.online, activity=game)
                 await ctx.channel.send(Lang['activity-changed']+' '+act)
+                print(now_time(), Lang['activity-changed'], act)
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
 async def copy(ctx, delete=''):
     if data['command-copy'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             await ctx.message.delete()
             if delete == '':
                 await ctx.channel.clone()
+                print(now_time(), ctx.channel, Lang['channel-copied'])
             elif delete == '-d':
                 await ctx.channel.clone()
                 await ctx.channel.delete()
+                print(now_time(), ctx.channel, Lang['channel-copied-deleted'])
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
 async def clearwarn(ctx, member: discord.Member=None, options=''):
     if data['command-clearwarn'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             if not member:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'clearwarn '+Lang['@user']+' (-a)', color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -279,18 +342,20 @@ async def clearwarn(ctx, member: discord.Member=None, options=''):
                             with open('warns.json', 'w') as f:
                                 json.dump(warns, f, indent = 4)
                             await ctx.channel.send(Lang['warn-amount']+warns[str(member)])
+                            print(now_time(), str(member), Lang['warn-amount'], warns[str(member)])
                         elif options == '-a':
                             warns[str(member)] = '0'
                             with open('warns.json', 'w') as f:
                                 json.dump(warns, f, indent = 4)
                             await ctx.channel.send(Lang['warn-cleared-all'])
+                            print(now_time(), str(member), Lang['warn-cleared-all'])
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
 async def exit(ctx):
     if data['command-exit'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             await ctx.message.delete()
             game = discord.Game(now_time())
             await bot.change_presence(status=discord.Status.offline, activity=game)
@@ -317,13 +382,17 @@ async def gay(ctx, member: discord.Member=None):
 async def kick(ctx, user: discord.Member=None):
     if data['command-kick'] == 'true':
         await ctx.message.delete()
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
+            elif user.id in admin_list or user.id in bypass_list:
+                embed = discord.Embed(title=Lang['user-bypassed'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed)
             else:
                 await ctx.guild.kick(user)
                 await ctx.channel.send(str(user)+Lang['user-kicked'])
+                print(now_time(), str(user), Lang['user-kicked'])
         else:
             await error_code.permission(ctx, Lang)
 
@@ -336,20 +405,31 @@ async def RESET(ctx):
         if data['debug-mode'] != 'true':
             await ctx.send(Lang['reset-error'], delete_after=3)
             return
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
-            reset.reset_config()
-            sys.exit()
+        if ctx.author.id in admin_list:
+            await ctx.send('確定執行此操作?', components = [[
+                Button(label='確定', style='3', custom_id='confirm'),
+                Button(label='取消', style='4', custom_id='cancel')
+            ]])
+            interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
+            res = interaction.custom_id
+            if res == 'confirm':
+                await interaction.send('已成功重置所有資料')
+                reset.reset_config()
+                sys.exit()
+            else:
+                await interaction.send('已取消此指令')
         else:
             await error_code.permission(ctx, Lang)
-
+        
 @bot.command()
 async def reload(ctx):
-    global data, prefix, Lang
+    global data, prefix, Lang, admin_list, bypass_list
     if data['command-reload'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             print(now_time(), Lang['reloaded'])
             await ctx.message.delete()
             data = json.load(open('config.json'))
+            admin_list = [int(data['owner-id']), int(data['admin-id-1']), int(data['admin-id-2'])]
             prefix = data['command-prefix']
             Lang = lang.lang_chose(data['language'])
             if data['custom-activity'] != '':
@@ -357,6 +437,22 @@ async def reload(ctx):
             else:
                 game = discord.Game(now_time())
             await bot.change_presence(status=discord.Status.online, activity=game)
+
+            admin_list = [int(data['owner-id']), int(data['admin-id-1']), int(data['admin-id-2'])]
+            for i in admin_list:
+                if data['debug-mode'] == 'true':
+                    if i == 0:
+                        print('admin id:', i, '(disable)')
+                    else:
+                        print('admin id:', i)
+            with open('bypass.json', "r", encoding = "utf8") as file:
+                bypass = json.load(file)
+            data_list = list(bypass.items())
+            bypass_list = []
+            for j in data_list:
+                if data['debug-mode'] == 'true':
+                    print('Bypass user:', j[0]+', id: '+j[1])
+                bypass_list.append(int(j[1]))
             await ctx.channel.send(Lang['reloaded'])
         else:
             await error_code.permission(ctx, Lang)
@@ -364,7 +460,7 @@ async def reload(ctx):
 @bot.command()
 async def showwarn(ctx, member: discord.Member=None):
     if data['command-showwarn'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             if not member:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'showwarn '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -383,7 +479,7 @@ async def time(ctx):
 @bot.command()
 async def tlm(ctx, message=''):
     if data['command-tlm'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             await ctx.message.delete()
             if message == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'tlm '+Lang['message'], color=0xEC2E2E)
@@ -399,7 +495,7 @@ async def tlm(ctx, message=''):
 async def unban(ctx, user: discord.User=None):
     if data['command-unban'] == 'true':
         await ctx.message.delete()
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
+        if ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'unban '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -407,28 +503,65 @@ async def unban(ctx, user: discord.User=None):
                 guild = ctx.guild
                 await guild.unban(user)
                 await ctx.channel.send(str(user)+Lang['user-unbanned'])
+                print(now_time(), str(user), Lang['user-unbanned'])
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
-async def warn(ctx, member: discord.Member=None, *, reason=''):
+async def uinfo(ctx, target: discord.Member=None):
+    if data['command-uinfo'] == 'true':
+        await ctx.message.delete()
+        if ctx.author.id in admin_list:
+            target = target or ctx.author
+            with open('warns.json', 'r') as f:
+                warns = json.load(f)
+            if not warns.__contains__(str(target)):
+                amount = '0'
+            else:
+                amount = warns[str(target)]
+            embed = discord.Embed(title=Lang['user-info'], colour=target.colour, timestamp=datetime.utcnow())
+            embed.set_thumbnail(url=target.avatar_url)
+
+            fields = [(Lang['user-info-name'], str(target), True),
+                        (Lang['user-info-nickname'], target.nick, True),
+	        			(Lang['user-info-id'], target.id, True),
+                        (Lang['user-info-permission'], target.guild_permissions.value, True),
+	        			(Lang['user-info-bot'], target.bot, True),
+	        			(Lang['user-info-toprole'], target.top_role.mention, True),
+                        (Lang['user-info-warn'], amount, True),
+	        			(Lang['user-info-status'], str(target.status).title(), True),
+	        			(Lang['user-info-activity'], f"{str(target.activity.type).split('.')[-1].title() if target.activity else 'N/A'} {target.activity.name if target.activity else ''}", True),
+                        (Lang['user-info-create-at'], target.created_at.strftime("%d/%m/%Y %H:%M:%S"), True),
+                        (Lang['user-info-join-at'], target.joined_at.strftime("%d/%m/%Y %H:%M:%S"), True),
+	        		    (Lang['user-info-boots'], bool(target.premium_since), True)]
+            for name, value, inline in fields:
+                    embed.add_field(name=name, value=value, inline=inline)
+
+            await ctx.send(embed=embed)
+
+@bot.command()
+async def warn(ctx, user: discord.Member=None, *, reason=''):
     if data['command-warn'] == 'true':
-        if ctx.author.id == int(data['admin-id-1']) or ctx.author.id == int(data['admin-id-2']) or ctx.author.id == int(data['owner-id']):
-            if not member:
+        if ctx.author.id in admin_list:
+            if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
+            elif user.id in admin_list or user.id in bypass_list:
+                embed = discord.Embed(title=Lang['user-bypassed'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed)
             else:
                 with open('warns.json', 'r') as f:
                     warns = json.load(f)
-                    if not warns.__contains__(str(member)):
-                        warns[str(member)] = '1'
+                    if not warns.__contains__(str(user)):
+                        warns[str(user)] = '1'
                     else:
-                        amount = int(warns[str(member)]) + 1
-                        warns[str(member)] = str(amount)
+                        amount = int(warns[str(user)]) + 1
+                        warns[str(user)] = str(amount)
                     with open('warns.json', 'w') as f:
                         json.dump(warns, f, indent = 4)
-                embed=discord.Embed(title=str(member)+Lang['user-warned'], description=Lang['warn-reason']+reason)
+                embed=discord.Embed(title=str(user)+Lang['user-warned'], description=Lang['warn-reason']+reason)
                 await ctx.channel.send(embed=embed)
+                print(now_time(), str(user), Lang['user-warned'], Lang['warn-reason'], reason)
         else:
             await error_code.permission(ctx, Lang)
 
@@ -438,7 +571,212 @@ async def on_message(message):
         await message.channel.purge(limit=1)
     await bot.process_commands(message)
 
+# Music bot
+
+global player_repeat
+gPlaylist = []
+player_repeat = False
+
+async def playit():
+    global gPlaylist
+    global player_repeat
+    try:
+        if not player_repeat:
+            gPlaylist.pop(0)
+        await asyncio.sleep(1)
+        sourcex = gPlaylist[0]
+        br = mechanize.Browser()
+        try:
+            br.open(sourcex)
+        except:
+            pass
+        try:
+            ydl_opts = {"format": "bestaudio"}
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(gPlaylist[0], download=False)
+                URL = info["formats"][0]["url"]
+        except:
+            URL = gPlaylist[0]
+        pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(URL, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
+        bot.voice_clients[0].play(pplayer, after=myafter)
+    except:
+        pass
+        
+def myafter(error):
+    #print(f"M-Error: {error}")
+    fut = asyncio.run_coroutine_threadsafe(playit(), bot.loop)
+    fut.result()
+
+async def music_button_1(ctx, url):
+    global player_repeat
+    music_menu = await ctx.send('', components = [[
+        Button(label=Lang['music-link'], style=ButtonStyle.URL, url=url)],[
+        Button(label=Lang['music-pause'], style='2', custom_id='pause', emoji='⏸'),
+        Button(label=Lang['music-resume'], style='2', custom_id='resume', emoji='⏯'),
+        Button(label=Lang['music-stop'], style='4', custom_id='stop', emoji='⏹'),
+        Button(label=Lang['music-repeat'], style='2', custom_id='repeat', emoji='🔁')
+    ]])
+    while True:
+        interaction = await bot.wait_for('button_click')
+        res = interaction.custom_id
+        try:
+            if res == 'pause':
+                await interaction.send(Lang['selected']+res)
+                await pause(ctx)
+            elif res == 'stop':
+                await interaction.send(Lang['selected']+res)
+                player_repeat = False
+                await stop(ctx)
+                return
+            elif res == 'resume':
+                await interaction.send(Lang['selected']+res)
+                await resume(ctx)
+            elif res == 'repeat':
+                await interaction.send(Lang['repeat-enabled'])
+                await repeat(ctx)
+                await music_menu.delete()
+                await music_button_2(ctx, url)
+                return
+        except:
+            pass
+async def music_button_2(ctx, url):
+    global player_repeat
+    music_menu_2 = await ctx.send('', components = [[
+        Button(label=Lang['music-link'], style=ButtonStyle.URL, url=url)],[
+        Button(label=Lang['music-pause'], style='2', custom_id='pause', emoji='⏸'),
+        Button(label=Lang['music-resume'], style='2', custom_id='resume', emoji='⏯'),
+        Button(label=Lang['music-stop'], style='4', custom_id='stop', emoji='⏹'),
+        Button(label=Lang['music-repeat'], style='3', custom_id='repeat', emoji='🔁')
+    ]])
+    while True:
+        interaction = await bot.wait_for('button_click')
+        res = interaction.custom_id
+        try:
+            if res == 'pause':
+                await interaction.send(Lang['selected']+res)
+                await pause(ctx)
+            elif res == 'stop':
+                await interaction.send(Lang['selected']+res)
+                player_repeat = False
+                await stop(ctx)
+                return
+            elif res == 'resume':
+                await interaction.send(Lang['selected']+res)
+                await resume(ctx)
+            elif res == 'repeat':
+                await interaction.send(Lang['repeat-disabled'])
+                await repeat(ctx)
+                await music_menu_2.delete()
+                await music_button_1(ctx, url)
+                return
+        except:
+            pass
+
+@bot.command(aliases=['p'])
+async def play(ctx, url: str=''):
+    if data['music-bot'] == 'true':
+        if url == '':
+            await ctx.channel.send(Lang['music-url-error'])
+            return
+        try:
+            voiceChannel = discord.utils.get(ctx.guild.voice_channels, id=ctx.author.voice.channel.id)
+        except:
+            await ctx.channel.send(Lang['music-user-not-in-channel'])
+            return
+        ydl_opts = {'format': 'bestaudio'}
+        FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+        try:
+            await voiceChannel.connect()
+        except:
+            pass
+        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        try:
+            gPlaylist.append(url)
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                Url = info['formats'][0]['url']
+
+            pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
+            voice.play(pplayer, after=myafter)
+            await ctx.message.add_reaction('✅')
+            embed = discord.Embed(title=Lang['music-playing'], description=info['title'], color=0x79EF2F)
+            embed.set_thumbnail(url=info.get('thumbnail'))
+
+            seconds = info['duration']
+            m, s = divmod(seconds, 60)
+            h, m = divmod(m, 60)
+
+            embed.add_field(name=Lang['music-uploader'], value=info.get('uploader'), inline=True)
+            embed.add_field(name=Lang['music-duration'], value="%d:%02d:%02d" % (h, m, s), inline=True)
+            embed.add_field(name=Lang['music-like_count'], value=str(info.get('like_count')), inline=True)
+            embed.add_field(name=Lang['music-DJ'], value=f'<@{ctx.message.author.id}>', inline=True)
+            embed.add_field(name=Lang['music-channel'], value=f'<#{ctx.author.voice.channel.id}>', inline=True)
+            embed.set_footer(text=now_time(), icon_url=ctx.author.avatar_url)
+            await ctx.channel.send(embed=embed)
+            await music_button_1(ctx, url)
+        except:
+            await ctx.message.add_reaction('❌')
+            await ctx.send(Lang['music-still-playing'])
+    
+
+@bot.command()
+async def leave(ctx):
+    if data['music-bot'] == 'true':
+        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        try:
+            if voice.is_connected():
+                await voice.disconnect()
+        except:
+            await ctx.channel.send(Lang['music-bot-not-in-channel'])
+
+
+@bot.command()
+async def pause(ctx):
+    if data['music-bot'] == 'true':
+        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        try:
+            if voice.is_playing():
+                voice.pause()
+        except:
+            await ctx.channel.send(Lang['music-nothing-playing'])
+
+
+@bot.command()
+async def resume(ctx):
+    if data['music-bot'] == 'true':
+        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        try:
+            if voice.is_paused():
+                voice.resume()
+        except:
+            await ctx.channel.send(Lang['music-nothing-pause'])
+
+@bot.command()
+async def repeat(ctx):
+    if data['music-bot'] == 'true':
+        global player_repeat
+        if player_repeat:
+            player_repeat = False
+            return
+        else:
+            player_repeat = True
+            return
+
+@bot.command()
+async def stop(ctx):
+    if data['music-bot'] == 'true':
+        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        try:
+            voice.stop()
+        except:
+            await ctx.channel.send(Lang['music-nothing-playing'])
+        return
+
 #
 
-
 bot.run(data['token'])
+
+# music bot(skip, play list), mute, unmute, chatfilter, bot status(online,offline,idle,dnd,invisible), clannel delete
+# bot act type ("playing", "watching", or "listening to), slowmode
+
+# add admin
