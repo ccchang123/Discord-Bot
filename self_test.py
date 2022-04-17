@@ -1,12 +1,9 @@
-language_list=['zh-tw', 'zh-cn', 'en-us']
-
 def error():
     error = input('Press Enter to continue')
-    exit()
 
-def check(data):
+def check(data, lang_list):
     global error
-    for language_set in language_list:
+    for language_set in lang_list:
         if data['language'] == language_set:
             found = True
             break

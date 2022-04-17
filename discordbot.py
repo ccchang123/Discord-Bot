@@ -1,3 +1,4 @@
+from cmath import exp
 import discord
 from datetime import datetime
 from discord.ext import commands, tasks
@@ -76,10 +77,19 @@ def load_admin_bypass():
             print('Bypass user:', j[0]+', id: '+j[1])
         bypass_list.append(int(j[1]))
 
-load_admin_bypass()
-self_test.check(data)
+def add_lang():
+    global lang_list
+    lang_list = []
+    for k in os.listdir('lang'):
+        if k.endswith(".json"):
+            lang = k.split(".",2)
+            lang_list.append(lang[0])
 
-Lang = lang.lang_chose(data['language'])
+add_lang()
+load_admin_bypass()
+self_test.check(data, lang_list)
+
+Lang = lang.lang_chose(data['language'], lang_list)
 
 if data['debug-mode'] == 'true':
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
@@ -482,19 +492,24 @@ async def reload(ctx):
     global data, prefix, Lang
     if data['command-reload'] == 'true':
         if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
-            print(now_time(), Lang['reloaded'])
             await ctx.message.delete()
+            add_lang()
+            load_admin_bypass()
             data = json.load(open('config.json'))
             prefix = data['command-prefix']
-            Lang = lang.lang_chose(data['language'])
+            Lang = lang.lang_chose(data['language'], lang_list)
             if data['custom-activity'] != '':
                 game = discord.Game(data['custom-activity'])
             else:
                 game = discord.Game(now_time())
             await bot.change_presence(status=discord.Status.online, activity=game)
-
-            load_admin_bypass()
-            await ctx.channel.send(Lang['reloaded'])
+            try:
+                await ctx.channel.send(Lang['reloaded'])
+                print(now_time(), Lang['reloaded'])
+            except:
+                print(now_time(), 'Could not pass language setting, end the bot!')
+                await ctx.channel.send('Could not pass language setting, end the bot!')
+                self_test.error()
         else:
             await error_code.permission(ctx, Lang)
 
@@ -882,7 +897,7 @@ async def stop(ctx):
 
 bot.run(data['token'])
 
-# music bot(skip, play list), mute, unmute, chatfilter, bot status(online,offline,idle,dnd,invisible), clannel delete
+# music bot(skip, play list, favorite), mute, unmute, chatfilter, bot status(online,offline,idle,dnd,invisible), clannel delete
 # bot act type ("playing", "watching", or "listening to), slowmode
 
-# add admin
+# custom lang
