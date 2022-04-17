@@ -13,7 +13,7 @@
 >
 > _More information and usage about command can check the wiki page._
 
-### add music some bot code
+### add some music bot code
 > _But now we have some problems_
 > 
 > If you want to try it,
