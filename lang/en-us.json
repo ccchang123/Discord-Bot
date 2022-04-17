@@ -34,6 +34,8 @@
     "bypass-removed": " has been removed from bypass list",
     "not-in-admin": "The user is not in the administrator list",
     "not-in-bypass": "The user is not in the bypass list",
+    "admin-had": " This user is already in the administrator list",
+    "bypass-had": " This user is already in the bypass list",
 
     "user-info": "User Information",
     "user-info-name": "Name",

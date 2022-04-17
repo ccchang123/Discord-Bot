@@ -34,6 +34,8 @@
     "bypass-removed": " 已從忽略名單中移除",
     "not-in-admin": "該使用者未在管理員名單中",
     "not-in-bypass": "該使用者未在忽略名單中",
+    "admin-had": " 該使用者已擁有管理員身分",
+    "bypass-had": " 該使用者已在忽略名單",
 
     "user-info": "成員資訊",
     "user-info-name": "名稱",
