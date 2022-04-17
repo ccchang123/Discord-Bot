@@ -1,4 +1,3 @@
-from cmath import exp
 import discord
 from datetime import datetime
 from discord.ext import commands, tasks
