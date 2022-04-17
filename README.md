@@ -19,3 +19,6 @@
 > If you want to try it,
 > 
 > Use the visual studio code to open the discord.py and run it
+
+### custom language
+> now you can create a language file (.json) to custom your bot language.
