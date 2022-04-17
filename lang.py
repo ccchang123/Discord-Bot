@@ -37,7 +37,7 @@ def lang_chose(sele, lang_list):
                 if data['debug-mode'] == 'true':
                     add_lang()
                     print('load '+i+' file --- ok',end='\n\n')
-        else:
-            language = None
+            return language
+    language = None
     return language
 
