@@ -499,6 +499,58 @@ async def reload(ctx):
             await error_code.permission(ctx, Lang)
 
 @bot.command()
+async def removeadmin(ctx, user: discord.Member=None):
+    if data['command-removeadmin'] == 'true':
+        if ctx.author.guild_permissions.administrator:
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'removeadmin '+Lang['@user'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                with open('admin.json', 'r') as f:
+                    admins = json.load(f)
+                    try:
+                        del (admins[str(user)])
+                        with open('admin.json', 'w') as f:
+                            json.dump(admins, f, indent = 4)
+                        load_admin_bypass()
+                        embed=discord.Embed(title=str(user)+Lang['admin-removed'])
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), str(user)+Lang['admin-removed'])
+                    except:
+                        embed=discord.Embed(title=Lang['not-in-admin'], color=0xEC2E2E)
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), Lang['not-in-admin'])
+                
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
+async def removebypass(ctx, user: discord.Member=None):
+    if data['command-removebypass'] == 'true':
+        if ctx.author.guild_permissions.administrator:
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'removebypass '+Lang['@user'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                with open('bypass.json', 'r') as f:
+                    bypass = json.load(f)
+                    try:
+                        del (bypass[str(user)])
+                        with open('bypass.json', 'w') as f:
+                            json.dump(bypass, f, indent = 4)
+                        load_admin_bypass()
+                        embed=discord.Embed(title=str(user)+Lang['bypass-removed'])
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), str(user)+Lang['bypass-removed'])
+                    except:
+                        embed=discord.Embed(title=Lang['not-in-bypass'], color=0xEC2E2E)
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), Lang['not-in-bypass'])
+                
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
 async def showwarn(ctx, member: discord.Member=None):
     if data['command-showwarn'] == 'true':
         if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
@@ -827,66 +879,6 @@ async def stop(ctx):
         return
 
 #
-
-
-
-
-@bot.command()
-async def removeadmin(ctx, user: discord.Member=None):
-    if data['command-removeadmin'] == 'true':
-        if ctx.author.guild_permissions.administrator:
-            if not user:
-                embed = discord.Embed(title=Lang['usage'], description=prefix+'removeadmin '+Lang['@user'], color=0xEC2E2E)
-                await ctx.channel.send(embed=embed, delete_after=5)
-            else:
-                with open('admin.json', 'r') as f:
-                    admins = json.load(f)
-                    try:
-                        del (admins[str(user)])
-                        with open('admin.json', 'w') as f:
-                            json.dump(admins, f, indent = 4)
-                        load_admin_bypass()
-                        embed=discord.Embed(title=str(user)+Lang['admin-removed'])
-                        await ctx.channel.send(embed=embed)
-                        print(now_time(), str(user)+Lang['admin-removed'])
-                    except:
-                        embed=discord.Embed(title=Lang['not-in-admin'], color=0xEC2E2E)
-                        await ctx.channel.send(embed=embed)
-                        print(now_time(), Lang['not-in-admin'])
-                
-        else:
-            await error_code.permission(ctx, Lang)
-
-@bot.command()
-async def removebypass(ctx, user: discord.Member=None):
-    if data['command-removebypass'] == 'true':
-        if ctx.author.guild_permissions.administrator:
-            if not user:
-                embed = discord.Embed(title=Lang['usage'], description=prefix+'removebypass '+Lang['@user'], color=0xEC2E2E)
-                await ctx.channel.send(embed=embed, delete_after=5)
-            else:
-                with open('bypass.json', 'r') as f:
-                    bypass = json.load(f)
-                    try:
-                        del (bypass[str(user)])
-                        with open('bypass.json', 'w') as f:
-                            json.dump(bypass, f, indent = 4)
-                        load_admin_bypass()
-                        embed=discord.Embed(title=str(user)+Lang['bypass-removed'])
-                        await ctx.channel.send(embed=embed)
-                        print(now_time(), str(user)+Lang['bypass-removed'])
-                    except:
-                        embed=discord.Embed(title=Lang['not-in-bypass'], color=0xEC2E2E)
-                        await ctx.channel.send(embed=embed)
-                        print(now_time(), Lang['not-in-bypass'])
-                
-        else:
-            await error_code.permission(ctx, Lang)
-
-
-@bot.command()
-async def test(ctx):
-    await ctx.channel.send(ctx.guild.owner_id)
 
 bot.run(data['token'])
 
