@@ -22,3 +22,5 @@
 
 ### custom language
 > now you can create a language file (.json) to custom your bot language.
+>  
+> Suggest you copy one of the json file to edit it.
