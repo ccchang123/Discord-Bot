@@ -4,14 +4,13 @@
     "command-prefix": "",
     "custom-activity": "",
     "owner-id": "000000000000000000",
-    "admin-id-1": "000000000000000000",
-    "admin-id-2": "000000000000000000",
     "local-channel-id": "000000000000000000",
     "create-category-id": "000000000000000000",
     "picture-only-channel-id": "000000000000000000",
 
     "debug-mode": "false",
 
+    "command-addadmin": "true",
     "command-addbypass": "true",
     "command-ban": "true",
     "command-clear": "true",
@@ -23,13 +22,16 @@
     "command-gay": "true",
     "command-kick": "true",
     "command-reload": "true",
-    "command-showwarn": "true",
-    "command-reset": "true",
+    "command-removeadmin": "true",
+    "command-removebypass": "true",
+	"command-showwarn": "true",
     "command-time": "true",
     "command-tlm": "true",
     "command-unban": "true",
     "command-uinfo": "true",
     "command-warn": "true",
+
+    "command-reset": "true",
 
     "music-bot": "true"
 }

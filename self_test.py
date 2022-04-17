@@ -34,13 +34,13 @@ def check(data):
             print('load command-prefix setting --- fail')
             error()
     
-    if data['admin-id-1'] == '' or data['admin-id-2'] == '' or data['owner-id'] == '':
+    if data['owner-id'] == '':
         if data['debug-mode'] == 'true':
-            print('load admin-id setting --- fail')
+            print('load owner-id setting --- fail')
         error()
     else:
         if data['debug-mode'] == 'true':
-            print('load admin-id setting --- ok')
+            print('load owner-id setting --- ok')
 
     if data['local-channel-id'] == '' or data['create-category-id'] == '' or data['picture-only-channel-id'] == '':
         if data['debug-mode'] == 'true':

@@ -2,16 +2,12 @@ import discord
 from datetime import datetime
 from discord.ext import commands, tasks
 from discord_components import *
-import time
-import random
-import asyncio
-import sys
-import json
-import os
+from discord.opus import *
+from discord import FFmpegPCMAudio
+import time, random, asyncio, sys, json, os
 import logging
 import tracemalloc
-import youtube_dl
-import mechanize
+import youtube_dl, mechanize
 import error_code, self_test, reset
 
 print('Copyright © 2022 cc_chang.','All rights reserved.',sep='\n' ,end='\n\n')
@@ -31,7 +27,20 @@ if check_warns == False:
     self_test.error()
 else:
     print('load warns file --- ok')
-    import lang
+
+check_admin = os.path.isfile('admin.json')
+if check_admin == False:
+    print('load admin file --- fail')
+    self_test.error()
+else:
+    print('load admin file --- ok')
+
+check_bypass = os.path.isfile('bypass.json')
+if check_bypass == False:
+    print('load bypass file --- fail')
+    self_test.error()
+else:
+    print('load bypass file --- ok')
 
 check_lang = os.path.isdir('lang/')
 if check_lang == False:
@@ -40,26 +49,34 @@ if check_lang == False:
 else:
     print('load lang folder --- ok',end='\n\n')
 
+#
+
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
-admin_list = [int(data['owner-id']), int(data['admin-id-1']), int(data['admin-id-2'])]
 
-for i in admin_list:
-    if data['debug-mode'] == 'true':
-        if i == 0:
-            print('admin id:', i, '(disable)')
-        else:
-            print('admin id:', i)
+def load_admin_bypass():
+    global bypass_list, admin_list
+    admin_list = []
+    bypass_list = []
+    with open('admin.json', "r", encoding = "utf8") as file:
+        admin = json.load(file)
+    admin_data_list = list(admin.items())
+    
+    for i in admin_data_list:
+        if data['debug-mode'] == 'true':
+           print('Add admin:', i[0]+', id: '+i[1])
+        admin_list.append(int(i[1]))
 
-with open('bypass.json', "r", encoding = "utf8") as file:
-    bypass = json.load(file)
-data_list = list(bypass.items())
-bypass_list = []
-for j in data_list:
-    if data['debug-mode'] == 'true':
-        print('Bypass user:', j[0]+', id: '+j[1])
-    bypass_list.append(int(j[1]))
+    with open('bypass.json', "r", encoding = "utf8") as file:
+        bypass = json.load(file)
+    bypass_data_list = list(bypass.items())
+    
+    for j in bypass_data_list:
+        if data['debug-mode'] == 'true':
+            print('Bypass user:', j[0]+', id: '+j[1])
+        bypass_list.append(int(j[1]))
 
+load_admin_bypass()
 self_test.check(data)
 
 Lang = lang.lang_chose(data['language'])
@@ -86,6 +103,7 @@ async def main_menu(ctx):
     await ctx.send(content=Lang['menu-name'], components=[Select(
                                                 placeholder=Lang['menu-select'],
                                                 options= [
+                                                    SelectOption(label=prefix+'addadmin', value=prefix+'addadmin', description=Lang['menu-message-addadmin'], emoji='🛠'),
                                                     SelectOption(label=prefix+'addbypass', value=prefix+'addbypass', description=Lang['menu-message-addbypass'], emoji='✅'),
                                                     SelectOption(label=prefix+'ban', value=prefix+'ban', description=Lang['menu-message-ban'], emoji='🚫'),
                                                     SelectOption(label=prefix+'clear', value=prefix+'clear', description=Lang['menu-message-clear'], emoji='🗑'),
@@ -98,6 +116,8 @@ async def main_menu(ctx):
                                                     SelectOption(label=prefix+'gay', value=prefix+'gay', description=Lang['menu-message-gay'], emoji='👨‍❤️‍👨'),
                                                     SelectOption(label=prefix+'kick', value=prefix+'kick', description=Lang['menu-message-kick'], emoji='🦵'),
                                                     SelectOption(label=prefix+'reload', value=prefix+'reload', description=Lang['menu-message-reload'], emoji='🔄'),
+                                                    SelectOption(label=prefix+'removeadmin', value=prefix+'removeadmin', description=Lang['menu-message-removeadmin'], emoji='🗑'),
+                                                    SelectOption(label=prefix+'removebypass', value=prefix+'removebypass', description=Lang['menu-message-removebypass'], emoji='🗑'),
                                                     SelectOption(label=prefix+'showwarn', value=prefix+'showwarn', description=Lang['menu-message-showwarn'], emoji='📄'),
                                                     SelectOption(label=prefix+'time', value=prefix+'time', description=Lang['menu-message-time'], emoji='⏱'),
                                                     SelectOption(label=prefix+'tlm', value=prefix+'tlm', description=Lang['menu-message-tlm'], emoji='📨'),
@@ -166,6 +186,15 @@ async def main_menu(ctx):
             elif res == prefix+'addbypass':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'addbypass '+Lang['@user'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
+            elif res == prefix+'addadmin':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'addadmin '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'removebypass':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'removebypass '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'removeadmin':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'removeadmin '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
             elif res == prefix+'uinfo':
                 await interaction.send(Lang['selected']+res)
                 await uinfo(ctx)
@@ -206,18 +235,45 @@ async def menu(ctx):
     await main_menu(ctx)
 
 @bot.command()
+async def addadmin(ctx, user: discord.Member=None):
+    if data['command-addadmin'] == 'true':
+        if ctx.author.guild_permissions.administrator:
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'addadmin '+Lang['@user'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            elif user.id in admin_list or user.guild_permissions.administrator:
+                embed=discord.Embed(title='該使用者已擁有管理員身分', color=0xEC2E2E)
+                await ctx.channel.send(embed=embed)
+            else:
+                with open('admin.json', 'r') as f:
+                    admins = json.load(f)
+                    admins[str(user)] = str(user.id)
+                    with open('admin.json', 'w') as f:
+                        json.dump(admins, f, indent = 4)
+                load_admin_bypass()
+                embed=discord.Embed(title=str(user)+Lang['admin-added'])
+                await ctx.channel.send(embed=embed)
+                print(now_time(), str(user)+Lang['admin-added'])
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
 async def addbypass(ctx, user: discord.Member=None):
     if data['command-addbypass'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'addbypass '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
+            elif user.id in bypass_list or user.guild_permissions.administrator:
+                embed=discord.Embed(title='該使用者已在忽略名單', color=0xEC2E2E)
+                await ctx.channel.send(embed=embed)
             else:
                 with open('bypass.json', 'r') as f:
-                    warns = json.load(f)
-                    warns[str(user)] = str(user.id)
+                    bypass = json.load(f)
+                    bypass[str(user)] = str(user.id)
                     with open('bypass.json', 'w') as f:
-                        json.dump(warns, f, indent = 4)
+                        json.dump(bypass, f, indent = 4)
+                load_admin_bypass()
                 embed=discord.Embed(title=str(user)+Lang['bypass-added'])
                 await ctx.channel.send(embed=embed)
                 print(now_time(), str(user)+Lang['bypass-added'])
@@ -228,11 +284,11 @@ async def addbypass(ctx, user: discord.Member=None):
 async def ban(ctx, user: discord.Member=None, *, reason=''):
     if data['command-ban'] == 'true':
         await ctx.message.delete()
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'ban '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
-            elif user.id in admin_list or user.id in bypass_list:
+            elif user.id in bypass_list or user.guild_permissions.administrator:
                 embed = discord.Embed(title=Lang['user-bypassed'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
             else:
@@ -245,7 +301,7 @@ async def ban(ctx, user: discord.Member=None, *, reason=''):
 @bot.command()
 async def clear(ctx, limit=0, member: discord.Member=None):
     if data['command-clear'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             await ctx.message.delete()
             if limit == 0:
                 embed = discord.Embed(title=Lang['usage'], description='', color=0xEC2E2E)
@@ -273,7 +329,7 @@ async def clear(ctx, limit=0, member: discord.Member=None):
 async def chlang(ctx, language=''):
     global Lang
     if data['command-chlang'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             await ctx.message.delete()
             if language == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'chlang '+Lang['language'], color=0xEC2E2E)
@@ -294,7 +350,7 @@ async def chlang(ctx, language=''):
 @bot.command()
 async def chact(ctx, *, act=''):
     if data['command-chact'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             await ctx.message.delete()
             if act == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'chact '+Lang['message'], color=0xEC2E2E)
@@ -310,7 +366,7 @@ async def chact(ctx, *, act=''):
 @bot.command()
 async def copy(ctx, delete=''):
     if data['command-copy'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             await ctx.message.delete()
             if delete == '':
                 await ctx.channel.clone()
@@ -325,26 +381,26 @@ async def copy(ctx, delete=''):
 @bot.command()
 async def clearwarn(ctx, member: discord.Member=None, options=''):
     if data['command-clearwarn'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not member:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'clearwarn '+Lang['@user']+' (-a)', color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
                 with open('warns.json', 'r') as f:
                     warns = json.load(f)
-                    if not warns.__contains__(str(member)) or int(warns[str(member)]) == 0:
+                    if not warns.__contains__(str(member.id)) or int(warns[str(member.id)]) == 0:
                         await ctx.channel.send(Lang['user-nowarn'])
                         return
                     else:
                         if options == '':
-                            amount = int(warns[str(member)]) - 1
-                            warns[str(member)] = str(amount)
+                            amount = int(warns[str(member.id)]) - 1
+                            warns[str(member.id)] = str(amount)
                             with open('warns.json', 'w') as f:
                                 json.dump(warns, f, indent = 4)
-                            await ctx.channel.send(Lang['warn-amount']+warns[str(member)])
-                            print(now_time(), str(member), Lang['warn-amount'], warns[str(member)])
+                            await ctx.channel.send(Lang['warn-amount']+warns[str(member.id)])
+                            print(now_time(), str(member), Lang['warn-amount'], warns[str(member.id)])
                         elif options == '-a':
-                            warns[str(member)] = '0'
+                            warns[str(member.id)] = '0'
                             with open('warns.json', 'w') as f:
                                 json.dump(warns, f, indent = 4)
                             await ctx.channel.send(Lang['warn-cleared-all'])
@@ -355,7 +411,7 @@ async def clearwarn(ctx, member: discord.Member=None, options=''):
 @bot.command()
 async def exit(ctx):
     if data['command-exit'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             await ctx.message.delete()
             game = discord.Game(now_time())
             await bot.change_presence(status=discord.Status.offline, activity=game)
@@ -382,11 +438,11 @@ async def gay(ctx, member: discord.Member=None):
 async def kick(ctx, user: discord.Member=None):
     if data['command-kick'] == 'true':
         await ctx.message.delete()
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
-            elif user.id in admin_list or user.id in bypass_list:
+            elif user.id in bypass_list or user.guild_permissions.administrator:
                 embed = discord.Embed(title=Lang['user-bypassed'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
             else:
@@ -405,7 +461,7 @@ async def RESET(ctx):
         if data['debug-mode'] != 'true':
             await ctx.send(Lang['reset-error'], delete_after=3)
             return
-        if ctx.author.id in admin_list:
+        if ctx.author.id == int(data['owner-id']):
             await ctx.send('確定執行此操作?', components = [[
                 Button(label='確定', style='3', custom_id='confirm'),
                 Button(label='取消', style='4', custom_id='cancel')
@@ -423,13 +479,12 @@ async def RESET(ctx):
         
 @bot.command()
 async def reload(ctx):
-    global data, prefix, Lang, admin_list, bypass_list
+    global data, prefix, Lang
     if data['command-reload'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             print(now_time(), Lang['reloaded'])
             await ctx.message.delete()
             data = json.load(open('config.json'))
-            admin_list = [int(data['owner-id']), int(data['admin-id-1']), int(data['admin-id-2'])]
             prefix = data['command-prefix']
             Lang = lang.lang_chose(data['language'])
             if data['custom-activity'] != '':
@@ -438,21 +493,7 @@ async def reload(ctx):
                 game = discord.Game(now_time())
             await bot.change_presence(status=discord.Status.online, activity=game)
 
-            admin_list = [int(data['owner-id']), int(data['admin-id-1']), int(data['admin-id-2'])]
-            for i in admin_list:
-                if data['debug-mode'] == 'true':
-                    if i == 0:
-                        print('admin id:', i, '(disable)')
-                    else:
-                        print('admin id:', i)
-            with open('bypass.json', "r", encoding = "utf8") as file:
-                bypass = json.load(file)
-            data_list = list(bypass.items())
-            bypass_list = []
-            for j in data_list:
-                if data['debug-mode'] == 'true':
-                    print('Bypass user:', j[0]+', id: '+j[1])
-                bypass_list.append(int(j[1]))
+            load_admin_bypass()
             await ctx.channel.send(Lang['reloaded'])
         else:
             await error_code.permission(ctx, Lang)
@@ -460,14 +501,14 @@ async def reload(ctx):
 @bot.command()
 async def showwarn(ctx, member: discord.Member=None):
     if data['command-showwarn'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not member:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'showwarn '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
                 with open('warns.json', 'r') as f:
                     warns = json.load(f)
-                    await ctx.channel.send(Lang['warn-amount']+warns[str(member)])
+                    await ctx.channel.send(Lang['warn-amount']+warns[str(member.id)])
         else:
             await error_code.permission(ctx, Lang)
 
@@ -479,7 +520,7 @@ async def time(ctx):
 @bot.command()
 async def tlm(ctx, message=''):
     if data['command-tlm'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             await ctx.message.delete()
             if message == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'tlm '+Lang['message'], color=0xEC2E2E)
@@ -495,7 +536,7 @@ async def tlm(ctx, message=''):
 async def unban(ctx, user: discord.User=None):
     if data['command-unban'] == 'true':
         await ctx.message.delete()
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'unban '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -511,7 +552,7 @@ async def unban(ctx, user: discord.User=None):
 async def uinfo(ctx, target: discord.Member=None):
     if data['command-uinfo'] == 'true':
         await ctx.message.delete()
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             target = target or ctx.author
             with open('warns.json', 'r') as f:
                 warns = json.load(f)
@@ -536,27 +577,28 @@ async def uinfo(ctx, target: discord.Member=None):
 	        		    (Lang['user-info-boots'], bool(target.premium_since), True)]
             for name, value, inline in fields:
                     embed.add_field(name=name, value=value, inline=inline)
-
             await ctx.send(embed=embed)
+        else:
+            await error_code.permission(ctx, Lang)
 
 @bot.command()
 async def warn(ctx, user: discord.Member=None, *, reason=''):
     if data['command-warn'] == 'true':
-        if ctx.author.id in admin_list:
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
-            elif user.id in admin_list or user.id in bypass_list:
+            elif user.id in bypass_list or user.guild_permissions.administrator:
                 embed = discord.Embed(title=Lang['user-bypassed'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
             else:
                 with open('warns.json', 'r') as f:
                     warns = json.load(f)
-                    if not warns.__contains__(str(user)):
-                        warns[str(user)] = '1'
+                    if not warns.__contains__(str(user.id)):
+                        warns[user.id] = '1'
                     else:
-                        amount = int(warns[str(user)]) + 1
-                        warns[str(user)] = str(amount)
+                        amount = int(warns[str(user.id)]) + 1
+                        warns[str(user.id)] = str(amount)
                     with open('warns.json', 'w') as f:
                         json.dump(warns, f, indent = 4)
                 embed=discord.Embed(title=str(user)+Lang['user-warned'], description=Lang['warn-reason']+reason)
@@ -617,7 +659,7 @@ async def music_button_1(ctx, url):
         Button(label=Lang['music-repeat'], style='2', custom_id='repeat', emoji='🔁')
     ]])
     while True:
-        interaction = await bot.wait_for('button_click')
+        interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
         res = interaction.custom_id
         try:
             if res == 'pause':
@@ -649,7 +691,7 @@ async def music_button_2(ctx, url):
         Button(label=Lang['music-repeat'], style='3', custom_id='repeat', emoji='🔁')
     ]])
     while True:
-        interaction = await bot.wait_for('button_click')
+        interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
         res = interaction.custom_id
         try:
             if res == 'pause':
@@ -718,6 +760,20 @@ async def play(ctx, url: str=''):
             await ctx.message.add_reaction('❌')
             await ctx.send(Lang['music-still-playing'])
     
+@bot.command()
+async def connect(ctx):
+    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    try:
+        voiceChannel = discord.utils.get(ctx.guild.voice_channels, id=ctx.author.voice.channel.id)
+    except:
+        await ctx.channel.send(Lang['music-user-not-in-channel'])
+        return
+    try:
+        if voice.is_connected():
+            await voice.disconnect()
+    except:
+        pass
+    await voiceChannel.connect()
 
 @bot.command()
 async def leave(ctx):
@@ -729,7 +785,6 @@ async def leave(ctx):
         except:
             await ctx.channel.send(Lang['music-bot-not-in-channel'])
 
-
 @bot.command()
 async def pause(ctx):
     if data['music-bot'] == 'true':
@@ -739,7 +794,6 @@ async def pause(ctx):
                 voice.pause()
         except:
             await ctx.channel.send(Lang['music-nothing-playing'])
-
 
 @bot.command()
 async def resume(ctx):
@@ -773,6 +827,66 @@ async def stop(ctx):
         return
 
 #
+
+
+
+
+@bot.command()
+async def removeadmin(ctx, user: discord.Member=None):
+    if data['command-removeadmin'] == 'true':
+        if ctx.author.guild_permissions.administrator:
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'removeadmin '+Lang['@user'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                with open('admin.json', 'r') as f:
+                    admins = json.load(f)
+                    try:
+                        del (admins[str(user)])
+                        with open('admin.json', 'w') as f:
+                            json.dump(admins, f, indent = 4)
+                        load_admin_bypass()
+                        embed=discord.Embed(title=str(user)+Lang['admin-removed'])
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), str(user)+Lang['admin-removed'])
+                    except:
+                        embed=discord.Embed(title=Lang['not-in-admin'], color=0xEC2E2E)
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), Lang['not-in-admin'])
+                
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
+async def removebypass(ctx, user: discord.Member=None):
+    if data['command-removebypass'] == 'true':
+        if ctx.author.guild_permissions.administrator:
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'removebypass '+Lang['@user'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                with open('bypass.json', 'r') as f:
+                    bypass = json.load(f)
+                    try:
+                        del (bypass[str(user)])
+                        with open('bypass.json', 'w') as f:
+                            json.dump(bypass, f, indent = 4)
+                        load_admin_bypass()
+                        embed=discord.Embed(title=str(user)+Lang['bypass-removed'])
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), str(user)+Lang['bypass-removed'])
+                    except:
+                        embed=discord.Embed(title=Lang['not-in-bypass'], color=0xEC2E2E)
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), Lang['not-in-bypass'])
+                
+        else:
+            await error_code.permission(ctx, Lang)
+
+
+@bot.command()
+async def test(ctx):
+    await ctx.channel.send(ctx.guild.owner_id)
 
 bot.run(data['token'])
 

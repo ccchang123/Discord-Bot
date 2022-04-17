@@ -6,14 +6,13 @@ config = {
     "command-prefix": "",
     "custom-activity": "",
     "owner-id": "000000000000000000",
-    "admin-id-1": "000000000000000000",
-    "admin-id-2": "000000000000000000",
     "local-channel-id": "000000000000000000",
     "create-category-id": "000000000000000000",
     "picture-only-channel-id": "000000000000000000",
 
     "debug-mode": "false",
 
+    "command-addadmin": "true",
     "command-addbypass": "true",
     "command-ban": "true",
     "command-clear": "true",
@@ -25,13 +24,16 @@ config = {
     "command-gay": "true",
     "command-kick": "true",
     "command-reload": "true",
-    "command-showwarn": "true",
-    "command-reset": "true",
+    "command-removeadmin": "true",
+    "command-removebypass": "true",
+	"command-showwarn": "true",
     "command-time": "true",
     "command-tlm": "true",
     "command-unban": "true",
     "command-uinfo": "true",
     "command-warn": "true",
+
+    "command-reset": "true",
 
     "music-bot": "true"
 }
@@ -45,13 +47,21 @@ bypass = {
     "It is a example_2": "000000000000000000"
 }
 
+admin = {
+    "It is a example_1": "000000000000000000",
+    "It is a example_2": "000000000000000000"
+}
+
 def reset_config():
     reset_config = json.dumps(config, indent = 4)
     reset_warns = json.dumps(warns, indent = 4)
     reset_bypass = json.dumps(bypass, indent = 4)
+    reset_admin = json.dumps(admin, indent = 4)
     with open("config.json", "w") as config_file:
         config_file.write(reset_config)
     with open("warns.json", "w") as warns_file:
         warns_file.write(reset_warns)
     with open("bypass.json", "w") as bypass_file:
         bypass_file.write(reset_bypass)
+    with open("admin.json", "w") as admin_file:
+        admin_file.write(reset_admin)
