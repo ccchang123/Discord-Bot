@@ -1,5 +1,6 @@
 def error():
     error = input('Press Enter to continue')
+    exit()
 
 def check(data, lang_list):
     global error
