@@ -251,7 +251,7 @@ async def addadmin(ctx, user: discord.Member=None):
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'addadmin '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
             elif user.id in admin_list or user.guild_permissions.administrator:
-                embed=discord.Embed(title='該使用者已擁有管理員身分', color=0xEC2E2E)
+                embed=discord.Embed(title=Lang['admin-had'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
             else:
                 with open('admin.json', 'r') as f:
@@ -274,7 +274,7 @@ async def addbypass(ctx, user: discord.Member=None):
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'addbypass '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
             elif user.id in bypass_list or user.guild_permissions.administrator:
-                embed=discord.Embed(title='該使用者已在忽略名單', color=0xEC2E2E)
+                embed=discord.Embed(title=Lang['bypass-had'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
             else:
                 with open('bypass.json', 'r') as f:
@@ -899,4 +899,12 @@ bot.run(data['token'])
 # music bot(skip, play list, favorite), mute, unmute, chatfilter, bot status(online,offline,idle,dnd,invisible), clannel delete
 # bot act type ("playing", "watching", or "listening to), slowmode
 
-# custom lang
+# @commands.command()
+#     async def volume(self, ctx, volume: int):
+#         """Changes the player's volume"""
+
+#         if ctx.voice_client is None:
+#             return await ctx.send("Not connected to a voice channel.")
+
+#         ctx.voice_client.source.volume = volume / 100
+#         await ctx.send(f"Changed volume to {volume}%") 
