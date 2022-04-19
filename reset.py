@@ -4,6 +4,7 @@ config = {
     "language": "",
     "token": "",
     "command-prefix": "",
+    "custom-status": "online",
     "custom-activity": "",
     "owner-id": "000000000000000000",
     "local-channel-id": "000000000000000000",
@@ -23,6 +24,7 @@ config = {
     "command-exit": "true",
     "command-gay": "true",
     "command-kick": "true",
+    "command-mute": "true",
     "command-reload": "true",
     "command-removeadmin": "true",
     "command-removebypass": "true",
@@ -30,6 +32,7 @@ config = {
     "command-time": "true",
     "command-tlm": "true",
     "command-unban": "true",
+    "command-unmute": "true",
     "command-uinfo": "true",
     "command-warn": "true",
 

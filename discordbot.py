@@ -101,6 +101,8 @@ prefix = data['command-prefix']
 intents = discord.Intents.all()
 bot = ComponentsBot(data['command-prefix'])
 
+bot.remove_command('help')
+
 def now_time():
     now = datetime.now()
     date_time = '<'+now.strftime("%Y-%m-%d, %H:%M:%S")+'>'
@@ -124,6 +126,7 @@ async def main_menu(ctx):
                                                     SelectOption(label=prefix+'exit', value=prefix+'exit', description=Lang['menu-message-exit'], emoji='⏹'),
                                                     SelectOption(label=prefix+'gay', value=prefix+'gay', description=Lang['menu-message-gay'], emoji='👨‍❤️‍👨'),
                                                     SelectOption(label=prefix+'kick', value=prefix+'kick', description=Lang['menu-message-kick'], emoji='🦵'),
+                                                    SelectOption(label=prefix+'mute', value=prefix+'mute', description=Lang['menu-message-mute'], emoji='🔈'),
                                                     SelectOption(label=prefix+'reload', value=prefix+'reload', description=Lang['menu-message-reload'], emoji='🔄'),
                                                     SelectOption(label=prefix+'removeadmin', value=prefix+'removeadmin', description=Lang['menu-message-removeadmin'], emoji='🗑'),
                                                     SelectOption(label=prefix+'removebypass', value=prefix+'removebypass', description=Lang['menu-message-removebypass'], emoji='🗑'),
@@ -131,6 +134,7 @@ async def main_menu(ctx):
                                                     SelectOption(label=prefix+'time', value=prefix+'time', description=Lang['menu-message-time'], emoji='⏱'),
                                                     SelectOption(label=prefix+'tlm', value=prefix+'tlm', description=Lang['menu-message-tlm'], emoji='📨'),
                                                     SelectOption(label=prefix+'unban', value=prefix+'unban', description=Lang['menu-message-unban'], emoji='⭕'),
+                                                    SelectOption(label=prefix+'unmute', value=prefix+'unmute', description=Lang['menu-message-unmute'], emoji='🔊'),
                                                     SelectOption(label=prefix+'uinfo', value=prefix+'uinfo', description=Lang['menu-message-uinfo'], emoji='🕵️'),
                                                     SelectOption(label=prefix+'warn', value=prefix+'warn', description=Lang['menu-message-warn'], emoji='⚠')
                                                 ],
@@ -181,7 +185,7 @@ async def main_menu(ctx):
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'unban '+Lang['@user'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
             elif res == prefix+'kick':
-                embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user'], color=0xEC2E2E)
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
             elif res == prefix+'clearwarn':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'clearwarn '+Lang['@user']+' (-a)', color=0xEC2E2E)
@@ -207,6 +211,12 @@ async def main_menu(ctx):
             elif res == prefix+'uinfo':
                 await interaction.send(Lang['selected']+res)
                 await uinfo(ctx)
+            elif res == prefix+'mute':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'mute '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'unmute':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'unmute '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
         except:
             pass
 
@@ -218,6 +228,15 @@ async def on_ready():
     else:
         game = discord.Game(now_time())
     #online,offline,idle,dnd,invisible
+    if data['custom-status'] == 'offline':
+        await bot.change_presence(status=discord.Status.offline, activity=game)
+    elif data['custom-status'] == 'idle':
+        await bot.change_presence(status=discord.Status.idle, activity=game)
+    elif data['custom-status'] == 'dnd':
+        await bot.change_presence(status=discord.Status.dnd, activity=game)
+    elif data['custom-status'] == 'invisible':
+        await bot.change_presence(status=discord.Status.invisible, activity=game)
+    
     await bot.change_presence(status=discord.Status.online, activity=game)
 
 @bot.event
@@ -290,7 +309,7 @@ async def addbypass(ctx, user: discord.Member=None):
             await error_code.permission(ctx, Lang)
 
 @bot.command()
-async def ban(ctx, user: discord.Member=None, *, reason=''):
+async def ban(ctx, user: discord.Member=None, *, reason='None'):
     if data['command-ban'] == 'true':
         await ctx.message.delete()
         if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
@@ -301,9 +320,11 @@ async def ban(ctx, user: discord.Member=None, *, reason=''):
                 embed = discord.Embed(title=Lang['user-bypassed'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
             else:
+                embed=discord.Embed(title=str(user)+Lang['user-banned'], description=Lang['warn-reason']+reason)
+                await user.send(embed=embed)
                 await ctx.guild.ban(user, reason=reason)
-                await ctx.channel.send(str(user)+Lang['user-banned'])
-                print(now_time(), str(user), Lang['user-banned'])
+                await ctx.channel.send(embed=embed)
+                print(now_time(), str(user), Lang['user-banned'], Lang['warn-reason'], reason)
         else:
             await error_code.permission(ctx, Lang)
 
@@ -420,6 +441,9 @@ async def clearwarn(ctx, member: discord.Member=None, options=''):
 @bot.command()
 async def exit(ctx):
     if data['command-exit'] == 'true':
+        if ctx.author.id != int(data['owner-id']):
+            await ctx.send(Lang['not-owner'], delete_after=3)
+            return
         if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             await ctx.message.delete()
             game = discord.Game(now_time())
@@ -444,20 +468,50 @@ async def gay(ctx, member: discord.Member=None):
             await ctx.message.delete()
 
 @bot.command()
-async def kick(ctx, user: discord.Member=None):
+async def kick(ctx, user: discord.Member=None, reason='None'):
     if data['command-kick'] == 'true':
         await ctx.message.delete()
         if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
-                embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user'], color=0xEC2E2E)
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
             elif user.id in bypass_list or user.guild_permissions.administrator:
                 embed = discord.Embed(title=Lang['user-bypassed'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
             else:
+                embed=discord.Embed(title=str(user)+Lang['user-kicked'], description=Lang['warn-reason']+reason)
+                await user.send(embed=embed)
                 await ctx.guild.kick(user)
-                await ctx.channel.send(str(user)+Lang['user-kicked'])
-                print(now_time(), str(user), Lang['user-kicked'])
+                await ctx.channel.send(embed=embed)
+                print(now_time(), str(user), Lang['user-kicked'], Lang['warn-reason'], reason)
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
+async def mute(ctx, user: discord.Member=None, *, reason='None'):
+    if data['command-mute'] == 'true':
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'mute '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            elif user.id in bypass_list or user.guild_permissions.administrator:
+                embed = discord.Embed(title=Lang['user-bypassed'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed)
+            else:
+                guild = ctx.guild
+                mutedRole = discord.utils.get(guild.roles, name=Lang['mute-role-name'])
+                all_roles = await guild.fetch_roles()
+                num_roles = len(all_roles)
+                if not mutedRole:
+                    mutedRole = await guild.create_role(name=Lang['mute-role-name'])
+                    await mutedRole.edit(position=num_roles - 2)
+                    for channel in guild.channels:
+                        await channel.set_permissions(mutedRole, speak=False, send_messages=False)
+                await user.add_roles(mutedRole, reason=reason)
+                embed=discord.Embed(title=str(user)+Lang['user-muted'], description=Lang['warn-reason']+reason)
+                await ctx.channel.send(embed=embed)
+                await user.send(embed=embed)
+                print(now_time(), str(user), Lang['user-muted'], Lang['warn-reason'], reason)
         else:
             await error_code.permission(ctx, Lang)
 
@@ -607,10 +661,33 @@ async def unban(ctx, user: discord.User=None):
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'unban '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
-                guild = ctx.guild
-                await guild.unban(user)
-                await ctx.channel.send(str(user)+Lang['user-unbanned'])
-                print(now_time(), str(user), Lang['user-unbanned'])
+                try:
+                    guild = ctx.guild
+                    await guild.unban(user)
+                    embed = discord.Embed(title=str(user)+Lang['user-unbanned'])
+                    await ctx.channel.send(embed=embed)
+                    print(now_time(), str(user), Lang['user-unbanned'])
+                except:
+                    embed = discord.Embed(title='該成員未被封鎖', color=0xEC2E2E)
+                    await ctx.channel.send(embed=embed)
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
+async def unmute(ctx, user: discord.Member=None):
+    if data['command-unmute'] == 'true':
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'unmute '+Lang['@user'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                mutedRole = discord.utils.get(ctx.guild.roles, name=Lang['mute-role-name'])
+
+                await user.remove_roles(mutedRole)
+                embed=discord.Embed(title=str(user)+Lang['user-unmuted'])
+                await ctx.channel.send(embed=embed)
+                await user.send(embed=embed)
+                print(now_time(), str(user), Lang['user-unmuted'])
         else:
             await error_code.permission(ctx, Lang)
 
@@ -648,7 +725,7 @@ async def uinfo(ctx, target: discord.Member=None):
             await error_code.permission(ctx, Lang)
 
 @bot.command()
-async def warn(ctx, user: discord.Member=None, *, reason=''):
+async def warn(ctx, user: discord.Member=None, *, reason='None'):
     if data['command-warn'] == 'true':
         if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
@@ -669,7 +746,38 @@ async def warn(ctx, user: discord.Member=None, *, reason=''):
                         json.dump(warns, f, indent = 4)
                 embed=discord.Embed(title=str(user)+Lang['user-warned'], description=Lang['warn-reason']+reason)
                 await ctx.channel.send(embed=embed)
+                await user.send(embed=embed)
                 print(now_time(), str(user), Lang['user-warned'], Lang['warn-reason'], reason)
+                if warns[str(user.id)] == data['auto-mute'] :
+                    reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-mute-message']
+                    guild = ctx.guild
+                    mutedRole = discord.utils.get(guild.roles, name=Lang['mute-role-name'])
+                    all_roles = await guild.fetch_roles()
+                    num_roles = len(all_roles)
+                    if not mutedRole:
+                        mutedRole = await guild.create_role(name=Lang['mute-role-name'])
+                        await mutedRole.edit(position=num_roles - 2)
+                        for channel in guild.channels:
+                            await channel.set_permissions(mutedRole, speak=False, send_messages=False)
+                    await user.add_roles(mutedRole, reason=reason)
+                    embed=discord.Embed(title=str(user)+Lang['user-muted'], description=Lang['warn-reason']+reason)
+                    await ctx.channel.send(embed=embed)
+                    await user.send(embed=embed)
+                    print(now_time(), str(user), Lang['user-muted'], Lang['warn-reason'], reason)
+                if warns[str(user.id)] == data['auto-kick']:
+                    reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-kick-message']
+                    embed=discord.Embed(title=str(user)+Lang['user-kicked'], description=Lang['warn-reason']+reason)
+                    await user.send(embed=embed)
+                    await ctx.guild.kick(user)
+                    await ctx.channel.send(embed=embed)
+                    print(now_time(), str(user), Lang['user-kicked'], Lang['warn-reason'], reason)
+                if warns[str(user.id)] == data['auto-ban']:
+                    reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-ban-message']
+                    embed=discord.Embed(title=str(user)+Lang['user-banned'], description=Lang['warn-reason']+reason)
+                    await user.send(embed=embed)
+                    await ctx.guild.ban(user, reason=reason)
+                    await ctx.channel.send(embed=embed)
+                    print(now_time(), str(user), Lang['user-banned'], Lang['warn-reason'], reason)
         else:
             await error_code.permission(ctx, Lang)
 
@@ -710,19 +818,38 @@ async def playit():
     except:
         pass
         
-def myafter(error):
+def myafter(ctx):
     #print(f"M-Error: {error}")
     fut = asyncio.run_coroutine_threadsafe(playit(), bot.loop)
     fut.result()
 
-async def music_button_1(ctx, url):
-    global player_repeat
+async def music_button_1(ctx, url, info):
+    global player_repeat, after_volume
+    embed = discord.Embed(title=Lang['music-playing'], description=info['title'], color=0x79EF2F)
+    embed.set_thumbnail(url=info.get('thumbnail'))
+
+    seconds = info['duration']
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+
+    embed.add_field(name=Lang['music-uploader'], value=info.get('uploader'), inline=True)
+    embed.add_field(name=Lang['music-duration'], value="%d:%02d:%02d" % (h, m, s), inline=True)
+    embed.add_field(name=Lang['music-like_count'], value=str(info.get('like_count')), inline=True)
+    embed.add_field(name=Lang['music-DJ'], value=f'<@{ctx.message.author.id}>', inline=True)
+    embed.add_field(name=Lang['music-channel'], value=f'<#{ctx.author.voice.channel.id}>', inline=True)
+    embed.set_footer(text=now_time(), icon_url=ctx.author.avatar_url)
+    music_info = await ctx.channel.send(embed=embed)
     music_menu = await ctx.send('', components = [[
         Button(label=Lang['music-link'], style=ButtonStyle.URL, url=url)],[
-        Button(label=Lang['music-pause'], style='2', custom_id='pause', emoji='⏸'),
-        Button(label=Lang['music-resume'], style='2', custom_id='resume', emoji='⏯'),
+        Button(label=Lang['music-pause'], style='1', custom_id='pause', emoji='⏸'),
+        Button(label=Lang['music-resume'], style='1', custom_id='resume', emoji='⏯'),
         Button(label=Lang['music-stop'], style='4', custom_id='stop', emoji='⏹'),
-        Button(label=Lang['music-repeat'], style='2', custom_id='repeat', emoji='🔁')
+        Button(label=Lang['music-repeat'], style='2', custom_id='repeat', emoji='🔁')],[
+        Button(label='50%', style='2', custom_id='volume_-50%', emoji='🔉'),
+        Button(label='10%', style='2', custom_id='volume_-10%', emoji='🔉'),
+        Button(label='靜音', style='4', custom_id='mute', emoji='🔈'),
+        Button(label='10%', style='2', custom_id='volume_+10%', emoji='🔊'),
+        Button(label='50%', style='2', custom_id='volume_+50%', emoji='🔊')
     ]])
     while True:
         interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
@@ -743,18 +870,63 @@ async def music_button_1(ctx, url):
                 await interaction.send(Lang['repeat-enabled'])
                 await repeat(ctx)
                 await music_menu.delete()
-                await music_button_2(ctx, url)
+                await music_info.delete()
+                await music_button_2(ctx, url, info)
                 return
+            elif res == 'mute':
+                await interaction.send('已靜音')
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = 0
+                ctx.voice_client.source.volume = 0 / 100
+            elif res == 'volume_-10%':
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = before_volume - 10
+                ctx.voice_client.source.volume = (before_volume - 10) / 100
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+            elif res == 'volume_-50%':
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = before_volume - 50
+                ctx.voice_client.source.volume = (before_volume - 50) / 100
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+            elif res == 'volume_+10%':
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = before_volume + 10
+                ctx.voice_client.source.volume = (before_volume + 10) / 100
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+            elif res == 'volume_+50%':
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = before_volume + 50
+                ctx.voice_client.source.volume = (before_volume + 50) / 100
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
         except:
             pass
-async def music_button_2(ctx, url):
-    global player_repeat
+async def music_button_2(ctx, url, info):
+    global player_repeat, after_volume
+    embed = discord.Embed(title=Lang['music-playing'], description=info['title'], color=0x79EF2F)
+    embed.set_thumbnail(url=info.get('thumbnail'))
+
+    seconds = info['duration']
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+
+    embed.add_field(name=Lang['music-uploader'], value=info.get('uploader'), inline=True)
+    embed.add_field(name=Lang['music-duration'], value="%d:%02d:%02d" % (h, m, s), inline=True)
+    embed.add_field(name=Lang['music-like_count'], value=str(info.get('like_count')), inline=True)
+    embed.add_field(name=Lang['music-DJ'], value=f'<@{ctx.message.author.id}>', inline=True)
+    embed.add_field(name=Lang['music-channel'], value=f'<#{ctx.author.voice.channel.id}>', inline=True)
+    embed.set_footer(text=now_time(), icon_url=ctx.author.avatar_url)
+    music_info_2 = await ctx.channel.send(embed=embed)
     music_menu_2 = await ctx.send('', components = [[
         Button(label=Lang['music-link'], style=ButtonStyle.URL, url=url)],[
         Button(label=Lang['music-pause'], style='2', custom_id='pause', emoji='⏸'),
         Button(label=Lang['music-resume'], style='2', custom_id='resume', emoji='⏯'),
         Button(label=Lang['music-stop'], style='4', custom_id='stop', emoji='⏹'),
-        Button(label=Lang['music-repeat'], style='3', custom_id='repeat', emoji='🔁')
+        Button(label=Lang['music-repeat'], style='3', custom_id='repeat', emoji='🔁')],[
+        Button(label='50%', style='2', custom_id='volume_-50%', emoji='🔉'),
+        Button(label='10%', style='2', custom_id='volume_-10%', emoji='🔉'),
+        Button(label='靜音', style='4', custom_id='mute', emoji='🔈'),
+        Button(label='10%', style='2', custom_id='volume_+10%', emoji='🔊'),
+        Button(label='50%', style='2', custom_id='volume_+50%', emoji='🔊')
     ]])
     while True:
         interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
@@ -775,8 +947,34 @@ async def music_button_2(ctx, url):
                 await interaction.send(Lang['repeat-disabled'])
                 await repeat(ctx)
                 await music_menu_2.delete()
-                await music_button_1(ctx, url)
+                await music_info_2.delete()
+                await music_button_1(ctx, url, info)
                 return
+            elif res == 'mute':
+                await interaction.send('已靜音')
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = 0
+                ctx.voice_client.source.volume = 0 / 100
+            elif res == 'volume_-10%':
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = before_volume - 10
+                ctx.voice_client.source.volume = (before_volume - 10) / 100
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+            elif res == 'volume_-50%':
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = before_volume - 50
+                ctx.voice_client.source.volume = (before_volume - 50) / 100
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+            elif res == 'volume_+10%':
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = before_volume + 10
+                ctx.voice_client.source.volume = (before_volume + 10) / 100
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+            elif res == 'volume_+50%':
+                before_volume = ctx.voice_client.source.volume * 100
+                after_volume = before_volume + 50
+                ctx.voice_client.source.volume = (before_volume + 50) / 100
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
         except:
             pass
 
@@ -791,8 +989,10 @@ async def play(ctx, url: str=''):
         except:
             await ctx.channel.send(Lang['music-user-not-in-channel'])
             return
-        ydl_opts = {'format': 'bestaudio'}
-        FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+        ydl_opts = {
+            'format': 'bestaudio',
+            'noplaylist': False,
+        }
         try:
             await voiceChannel.connect()
         except:
@@ -807,21 +1007,8 @@ async def play(ctx, url: str=''):
             pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
             voice.play(pplayer, after=myafter)
             await ctx.message.add_reaction('✅')
-            embed = discord.Embed(title=Lang['music-playing'], description=info['title'], color=0x79EF2F)
-            embed.set_thumbnail(url=info.get('thumbnail'))
-
-            seconds = info['duration']
-            m, s = divmod(seconds, 60)
-            h, m = divmod(m, 60)
-
-            embed.add_field(name=Lang['music-uploader'], value=info.get('uploader'), inline=True)
-            embed.add_field(name=Lang['music-duration'], value="%d:%02d:%02d" % (h, m, s), inline=True)
-            embed.add_field(name=Lang['music-like_count'], value=str(info.get('like_count')), inline=True)
-            embed.add_field(name=Lang['music-DJ'], value=f'<@{ctx.message.author.id}>', inline=True)
-            embed.add_field(name=Lang['music-channel'], value=f'<#{ctx.author.voice.channel.id}>', inline=True)
-            embed.set_footer(text=now_time(), icon_url=ctx.author.avatar_url)
-            await ctx.channel.send(embed=embed)
-            await music_button_1(ctx, url)
+            
+            await music_button_1(ctx, url, info)
         except:
             await ctx.message.add_reaction('❌')
             await ctx.send(Lang['music-still-playing'])
@@ -884,27 +1071,35 @@ async def repeat(ctx):
 
 @bot.command()
 async def stop(ctx):
+    global player_repeat
     if data['music-bot'] == 'true':
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        player_repeat = False
         try:
             voice.stop()
         except:
             await ctx.channel.send(Lang['music-nothing-playing'])
         return
 
+@bot.command()
+async def volume(ctx, volume: int=100):
+
+    if ctx.voice_client is None:
+        return await ctx.send(Lang['music-bot-not-in-channel'])
+    before_volume = ctx.voice_client.source.volume * 100
+    ctx.voice_client.source.volume = volume / 100
+    await ctx.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+
 #
 
 bot.run(data['token'])
 
-# music bot(skip, play list, favorite), mute, unmute, chatfilter, bot status(online,offline,idle,dnd,invisible), clannel delete
-# bot act type ("playing", "watching", or "listening to), slowmode
+# music bot(skip, play list, favorite), chatfilter, tempban, tempmute, ticket tool
+# slowmode, chprefix
 
-# @commands.command()
-#     async def volume(self, ctx, volume: int):
-#         """Changes the player's volume"""
+# (voice)channel delete, create
+# role delete, create
 
-#         if ctx.voice_client is None:
-#             return await ctx.send("Not connected to a voice channel.")
+# online count, total conut
 
-#         ctx.voice_client.source.volume = volume / 100
-#         await ctx.send(f"Changed volume to {volume}%") 
+# volume, custom-status, mute, unmute, auto mute, auto kick, auto ban

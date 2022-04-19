@@ -1,6 +1,4 @@
-import asyncio
-
+import discord
 async def permission(error, Lang):
-    await error.channel.send(Lang['permission-error'], delete_after=1)
-    await asyncio.sleep(1)
-    await error.message.delete()
+    embed = discord.Embed(title=Lang['permission-error'], color=0xEC2E2E)
+    await error.channel.send(embed=embed)
