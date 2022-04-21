@@ -1052,22 +1052,22 @@ async def music_button_1(ctx, url, info):
                 before_volume = ctx.voice_client.source.volume * 100
                 after_volume = before_volume - 10
                 ctx.voice_client.source.volume = (before_volume - 10) / 100
-                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(after_volume)+'%')
             elif res == 'volume_-50%':
                 before_volume = ctx.voice_client.source.volume * 100
                 after_volume = before_volume - 50
                 ctx.voice_client.source.volume = (before_volume - 50) / 100
-                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(after_volume)+'%')
             elif res == 'volume_+10%':
                 before_volume = ctx.voice_client.source.volume * 100
                 after_volume = before_volume + 10
                 ctx.voice_client.source.volume = (before_volume + 10) / 100
-                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(after_volume)+'%')
             elif res == 'volume_+50%':
                 before_volume = ctx.voice_client.source.volume * 100
                 after_volume = before_volume + 50
                 ctx.voice_client.source.volume = (before_volume + 50) / 100
-                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(after_volume)+'%')
         except:
             pass
 async def music_button_2(ctx, url, info):
@@ -1129,22 +1129,22 @@ async def music_button_2(ctx, url, info):
                 before_volume = ctx.voice_client.source.volume * 100
                 after_volume = before_volume - 10
                 ctx.voice_client.source.volume = (before_volume - 10) / 100
-                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(after_volume)+'%')
             elif res == 'volume_-50%':
                 before_volume = ctx.voice_client.source.volume * 100
                 after_volume = before_volume - 50
                 ctx.voice_client.source.volume = (before_volume - 50) / 100
-                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(after_volume)+'%')
             elif res == 'volume_+10%':
                 before_volume = ctx.voice_client.source.volume * 100
                 after_volume = before_volume + 10
                 ctx.voice_client.source.volume = (before_volume + 10) / 100
-                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(after_volume)+'%')
             elif res == 'volume_+50%':
                 before_volume = ctx.voice_client.source.volume * 100
                 after_volume = before_volume + 50
                 ctx.voice_client.source.volume = (before_volume + 50) / 100
-                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
+                await interaction.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(after_volume)+'%')
         except:
             pass
 
