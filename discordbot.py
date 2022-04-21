@@ -1,4 +1,3 @@
-from glob import glob
 import discord
 from datetime import datetime
 from discord.ext import commands, tasks
@@ -10,9 +9,15 @@ import logging
 import tracemalloc
 from pandas import Categorical
 import youtube_dl, mechanize
+import wget, zipfile
 import error_code, self_test, reset
 
-if os.path.isdir('ffmpeg'):
+print('Downloading required resources...')
+if not os.path.isdir('C:\\ffmpeg'):
+    wget.download('https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip', './')
+    zf = zipfile.ZipFile('ffmpeg-master-latest-win64-gpl.zip', 'r')
+    zf.extractall()
+    os.rename('ffmpeg-master-latest-win64-gpl', 'ffmpeg')
     os.system(r'move ./ffmpeg C:\\')
 
 print('Copyright © 2022 cc_chang.','All rights reserved.',sep='\n' ,end='\n\n')

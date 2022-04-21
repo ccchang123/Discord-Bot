@@ -3,5 +3,6 @@
 @pip install mechanize
 @pip install youtube_dl
 @pip install PyNaCl
+@pip install wget
 setx PATH "%PATH%;C:\ffmpeg\bin" /M
 @pause
