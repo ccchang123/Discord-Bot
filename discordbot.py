@@ -1,3 +1,4 @@
+from glob import glob
 import discord
 from datetime import datetime
 from discord.ext import commands, tasks
@@ -7,8 +8,12 @@ from discord import FFmpegPCMAudio
 import time, random, asyncio, sys, json, os
 import logging
 import tracemalloc
+from pandas import Categorical
 import youtube_dl, mechanize
 import error_code, self_test, reset
+
+if os.path.isdir('ffmpeg'):
+    os.system(r'move ./ffmpeg C:\\')
 
 print('Copyright © 2022 cc_chang.','All rights reserved.',sep='\n' ,end='\n\n')
 print('View more information in github:', 'https://github.com/ccchang123/Discord-Bot.git','---------------------------------------------',sep='\n')
@@ -99,6 +104,8 @@ else:
 
 prefix = data['command-prefix']
 intents = discord.Intents.all()
+intents.members = True
+intents.guilds = True
 bot = ComponentsBot(data['command-prefix'])
 
 bot.remove_command('help')
@@ -110,7 +117,7 @@ def now_time():
 
 tracemalloc.start()
 
-async def main_menu(ctx):
+async def main_menu_1(ctx):
     await ctx.send(content=Lang['menu-name'], components=[Select(
                                                 placeholder=Lang['menu-select'],
                                                 options= [
@@ -123,6 +130,8 @@ async def main_menu(ctx):
                                                     SelectOption(label=prefix+'copy', value=prefix+'copy', description=Lang['menu-message-copy'], emoji='✂'),
                                                     SelectOption(label=prefix+'copy -d', value=prefix+'copy'+'-d', description=Lang['menu-message-copy-delete'], emoji='✂'),
                                                     SelectOption(label=prefix+'clearwarn', value=prefix+'clearwarn', description=Lang['menu-message-clearwarn'], emoji='🗑'),
+                                                    SelectOption(label=prefix+'cd', value=prefix+'cd', description=Lang['menu-message-cd'], emoji='🗑'),
+                                                    SelectOption(label=prefix+'ci', value=prefix+'ci', description=Lang['menu-message-ci'], emoji='😎'),
                                                     SelectOption(label=prefix+'exit', value=prefix+'exit', description=Lang['menu-message-exit'], emoji='⏹'),
                                                     SelectOption(label=prefix+'gay', value=prefix+'gay', description=Lang['menu-message-gay'], emoji='👨‍❤️‍👨'),
                                                     SelectOption(label=prefix+'kick', value=prefix+'kick', description=Lang['menu-message-kick'], emoji='🦵'),
@@ -131,17 +140,17 @@ async def main_menu(ctx):
                                                     SelectOption(label=prefix+'removeadmin', value=prefix+'removeadmin', description=Lang['menu-message-removeadmin'], emoji='🗑'),
                                                     SelectOption(label=prefix+'removebypass', value=prefix+'removebypass', description=Lang['menu-message-removebypass'], emoji='🗑'),
                                                     SelectOption(label=prefix+'showwarn', value=prefix+'showwarn', description=Lang['menu-message-showwarn'], emoji='📄'),
+                                                    SelectOption(label=prefix+'slowmoe', value=prefix+'slowmoe', description=Lang['menu-message-slowmoe'], emoji='🐢'),
                                                     SelectOption(label=prefix+'time', value=prefix+'time', description=Lang['menu-message-time'], emoji='⏱'),
                                                     SelectOption(label=prefix+'tlm', value=prefix+'tlm', description=Lang['menu-message-tlm'], emoji='📨'),
                                                     SelectOption(label=prefix+'unban', value=prefix+'unban', description=Lang['menu-message-unban'], emoji='⭕'),
                                                     SelectOption(label=prefix+'unmute', value=prefix+'unmute', description=Lang['menu-message-unmute'], emoji='🔊'),
-                                                    SelectOption(label=prefix+'uinfo', value=prefix+'uinfo', description=Lang['menu-message-uinfo'], emoji='🕵️'),
-                                                    SelectOption(label=prefix+'warn', value=prefix+'warn', description=Lang['menu-message-warn'], emoji='⚠')
+                                                    SelectOption(label=prefix+'uinfo', value=prefix+'uinfo', description=Lang['menu-message-uinfo'], emoji='🕵️')
                                                 ],
-                                                custom_id='main_menu'
+                                                custom_id='main_menu_1'
     )])
     while True:
-        interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'main_menu' and inter.user == ctx.author)
+        interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'main_menu_1')
         res = interaction.values[0]
         try:
             if res == prefix+'time':
@@ -193,9 +202,6 @@ async def main_menu(ctx):
             elif res == prefix+'showwarn':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'showwarn '+Lang['@user'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
-            elif res == prefix+'warn':
-                embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
-                await interaction.send(embed=embed)
             elif res == prefix+'addbypass':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'addbypass '+Lang['@user'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
@@ -216,6 +222,32 @@ async def main_menu(ctx):
                 await interaction.send(embed=embed)
             elif res == prefix+'unmute':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'unmute '+Lang['@user'], color=0xEC2E2E)
+                await interaction.send(embed=embed)
+            elif res == prefix+'slowmoe':
+                await interaction.send(Lang['selected']+res)
+                await slowmode(ctx)
+            elif res == prefix+'cd':
+                await interaction.send(Lang['selected']+res)
+                await cd(ctx)
+            elif res == prefix+'ci':
+                await interaction.send(Lang['selected']+res)
+                await ci(ctx)
+        except:
+            pass
+async def main_menu_2(ctx):
+    await ctx.send(content=Lang['menu-name'], components=[Select(
+                                                placeholder=Lang['menu-select'],
+                                                options= [
+                                                    SelectOption(label=prefix+'warn', value=prefix+'warn', description=Lang['menu-message-warn'], emoji='⚠')
+                                                ],
+                                                custom_id='main_menu_2'
+    )])
+    while True:
+        interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'main_menu_2')
+        res = interaction.values[0]
+        try:
+            if res == prefix+'warn':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
         except:
             pass
@@ -259,8 +291,11 @@ async def on_voice_state_update(member, before, after):
         print(now_time(), member, Lang['when-channel-create'])
 
 @bot.command()
-async def menu(ctx):
-    await main_menu(ctx)
+async def menu(ctx, page: int=1):
+    if page == 1:
+        await main_menu_1(ctx)
+    elif page == 2:
+        await main_menu_2(ctx)
 
 @bot.command()
 async def addadmin(ctx, user: discord.Member=None):
@@ -309,10 +344,23 @@ async def addbypass(ctx, user: discord.Member=None):
             await error_code.permission(ctx, Lang)
 
 @bot.command()
-async def ban(ctx, user: discord.Member=None, *, reason='None'):
+async def ban(ctx, user: discord.Member=None, options='', *, reason='None'):
     if data['command-ban'] == 'true':
         await ctx.message.delete()
-        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
+        if options == '--sync' and ctx.author.id == int(data['owner-id']):
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'ban '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                embed=discord.Embed(title=str(user)+Lang['user-banned'], description=Lang['warn-reason']+reason)
+                try:
+                    await user.send(embed=embed)
+                except:
+                    pass
+                await ctx.guild.ban(user, reason=reason)
+                await ctx.channel.send(embed=embed)
+                print(now_time(), str(user), Lang['user-banned'], Lang['warn-reason'], reason)
+        elif ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'ban '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -321,7 +369,10 @@ async def ban(ctx, user: discord.Member=None, *, reason='None'):
                 await ctx.channel.send(embed=embed)
             else:
                 embed=discord.Embed(title=str(user)+Lang['user-banned'], description=Lang['warn-reason']+reason)
-                await user.send(embed=embed)
+                try:
+                    await user.send(embed=embed)
+                except:
+                    pass
                 await ctx.guild.ban(user, reason=reason)
                 await ctx.channel.send(embed=embed)
                 print(now_time(), str(user), Lang['user-banned'], Lang['warn-reason'], reason)
@@ -439,6 +490,27 @@ async def clearwarn(ctx, member: discord.Member=None, options=''):
             await error_code.permission(ctx, Lang)
 
 @bot.command()
+async def cd(ctx):
+    if data['command-cd'] == 'true':
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
+            await ctx.message.delete()
+            await ctx.channel.delete()
+            print(now_time(), ctx.channel, Lang['channel-deleted'])
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
+async def ci(ctx):
+    if data['command-ci'] == 'true':
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
+            await ctx.message.delete()
+            await ctx.channel.set_permissions(ctx.guild.default_role, send_messages=False, view_channel=False)
+            await ctx.send(Lang['channel-invisibled'])
+            print(now_time(), ctx.channel, Lang['channel-invisibled'])
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
 async def exit(ctx):
     if data['command-exit'] == 'true':
         if ctx.author.id != int(data['owner-id']):
@@ -468,10 +540,23 @@ async def gay(ctx, member: discord.Member=None):
             await ctx.message.delete()
 
 @bot.command()
-async def kick(ctx, user: discord.Member=None, reason='None'):
+async def kick(ctx, user: discord.Member=None, options='', reason='None'):
     if data['command-kick'] == 'true':
         await ctx.message.delete()
-        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
+        if options == '--sync' and ctx.author.id == int(data['owner-id']):
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                embed=discord.Embed(title=str(user)+Lang['user-kicked'], description=Lang['warn-reason']+reason)
+                try:
+                    await user.send(embed=embed)
+                except:
+                    pass
+                await ctx.guild.kick(user)
+                await ctx.channel.send(embed=embed)
+                print(now_time(), str(user), Lang['user-kicked'], Lang['warn-reason'], reason)
+        elif ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -480,17 +565,40 @@ async def kick(ctx, user: discord.Member=None, reason='None'):
                 await ctx.channel.send(embed=embed)
             else:
                 embed=discord.Embed(title=str(user)+Lang['user-kicked'], description=Lang['warn-reason']+reason)
-                await user.send(embed=embed)
+                try:
+                    await user.send(embed=embed)
+                except:
+                    pass
                 await ctx.guild.kick(user)
                 await ctx.channel.send(embed=embed)
                 print(now_time(), str(user), Lang['user-kicked'], Lang['warn-reason'], reason)
+        
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
-async def mute(ctx, user: discord.Member=None, *, reason='None'):
+async def mute(ctx, user: discord.Member=None, options='', *, reason='None'):
     if data['command-mute'] == 'true':
-        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
+        if options == '--sync' and ctx.author.id == int(data['owner-id']):
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'mute '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                guild = ctx.guild
+                mutedRole = discord.utils.get(guild.roles, name=Lang['mute-role-name'])
+                all_roles = await guild.fetch_roles()
+                num_roles = len(all_roles)
+                if not mutedRole:
+                    mutedRole = await guild.create_role(name=Lang['mute-role-name'])
+                    await mutedRole.edit(position=num_roles - 2)
+                    for channel in guild.channels:
+                        await channel.set_permissions(mutedRole, speak=False, send_messages=False)
+                await user.add_roles(mutedRole, reason=reason)
+                embed=discord.Embed(title=str(user)+Lang['user-muted'], description=Lang['warn-reason']+reason)
+                await ctx.channel.send(embed=embed)
+                await user.send(embed=embed)
+                print(now_time(), str(user), Lang['user-muted'], Lang['warn-reason'], reason)
+        elif ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'mute '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -633,6 +741,16 @@ async def showwarn(ctx, member: discord.Member=None):
             await error_code.permission(ctx, Lang)
 
 @bot.command()
+async def slowmode(ctx, seconds: int=0):
+    if data['command-slowmode'] == 'true':
+        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
+            await ctx.channel.edit(slowmode_delay=seconds)
+            embed = discord.Embed(title=Lang['slowmode-message']+str(seconds)+Lang['slowmode-seconds'], color=0xEC2E2E)
+            await ctx.send(embed=embed) 
+        else:
+            await error_code.permission(ctx, Lang)
+
+@bot.command()
 async def time(ctx):
     if data['command-time'] == 'true':
         await ctx.reply(now_time(), mention_author=True)
@@ -719,15 +837,63 @@ async def uinfo(ctx, target: discord.Member=None):
                         (Lang['user-info-join-at'], target.joined_at.strftime("%d/%m/%Y %H:%M:%S"), True),
 	        		    (Lang['user-info-boots'], bool(target.premium_since), True)]
             for name, value, inline in fields:
-                    embed.add_field(name=name, value=value, inline=inline)
+                embed.add_field(name=name, value=value, inline=inline)
             await ctx.send(embed=embed)
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
-async def warn(ctx, user: discord.Member=None, *, reason='None'):
+async def warn(ctx, user: discord.Member=None, options='', *, reason='None'):
     if data['command-warn'] == 'true':
-        if ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
+        if options == '--sync' and ctx.author.id == int(data['owner-id']):
+            if not user:
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed, delete_after=5)
+            else:
+                with open('warns.json', 'r') as f:
+                    warns = json.load(f)
+                    if not warns.__contains__(str(user.id)):
+                        warns[user.id] = '1'
+                    else:
+                        amount = int(warns[str(user.id)]) + 1
+                        warns[str(user.id)] = str(amount)
+                    with open('warns.json', 'w') as f:
+                        json.dump(warns, f, indent = 4)
+                embed=discord.Embed(title=str(user)+Lang['user-warned'], description=Lang['warn-reason']+reason)
+                await ctx.channel.send(embed=embed)
+                await user.send(embed=embed)
+                print(now_time(), str(user), Lang['user-warned'], Lang['warn-reason'], reason)
+                if warns[str(user.id)] == data['auto-mute'] :
+                    reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-mute-message']
+                    guild = ctx.guild
+                    mutedRole = discord.utils.get(guild.roles, name=Lang['mute-role-name'])
+                    all_roles = await guild.fetch_roles()
+                    num_roles = len(all_roles)
+                    if not mutedRole:
+                        mutedRole = await guild.create_role(name=Lang['mute-role-name'])
+                        await mutedRole.edit(position=num_roles - 2)
+                        for channel in guild.channels:
+                            await channel.set_permissions(mutedRole, speak=False, send_messages=False)
+                    await user.add_roles(mutedRole, reason=reason)
+                    embed=discord.Embed(title=str(user)+Lang['user-muted'], description=Lang['warn-reason']+reason)
+                    await ctx.channel.send(embed=embed)
+                    await user.send(embed=embed)
+                    print(now_time(), str(user), Lang['user-muted'], Lang['warn-reason'], reason)
+                if warns[str(user.id)] == data['auto-kick']:
+                    reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-kick-message']
+                    embed=discord.Embed(title=str(user)+Lang['user-kicked'], description=Lang['warn-reason']+reason)
+                    await user.send(embed=embed)
+                    await ctx.guild.kick(user)
+                    await ctx.channel.send(embed=embed)
+                    print(now_time(), str(user), Lang['user-kicked'], Lang['warn-reason'], reason)
+                if warns[str(user.id)] == data['auto-ban']:
+                    reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-ban-message']
+                    embed=discord.Embed(title=str(user)+Lang['user-banned'], description=Lang['warn-reason']+reason)
+                    await user.send(embed=embed)
+                    await ctx.guild.ban(user, reason=reason)
+                    await ctx.channel.send(embed=embed)
+                    print(now_time(), str(user), Lang['user-banned'], Lang['warn-reason'], reason)
+        elif ctx.author.guild_permissions.administrator or ctx.author.id in admin_list:
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -819,7 +985,6 @@ async def playit():
         pass
         
 def myafter(ctx):
-    #print(f"M-Error: {error}")
     fut = asyncio.run_coroutine_threadsafe(playit(), bot.loop)
     fut.result()
 
@@ -874,7 +1039,7 @@ async def music_button_1(ctx, url, info):
                 await music_button_2(ctx, url, info)
                 return
             elif res == 'mute':
-                await interaction.send('已靜音')
+                await interaction.send(Lang['volume-muted'])
                 before_volume = ctx.voice_client.source.volume * 100
                 after_volume = 0
                 ctx.voice_client.source.volume = 0 / 100
@@ -918,8 +1083,8 @@ async def music_button_2(ctx, url, info):
     music_info_2 = await ctx.channel.send(embed=embed)
     music_menu_2 = await ctx.send('', components = [[
         Button(label=Lang['music-link'], style=ButtonStyle.URL, url=url)],[
-        Button(label=Lang['music-pause'], style='2', custom_id='pause', emoji='⏸'),
-        Button(label=Lang['music-resume'], style='2', custom_id='resume', emoji='⏯'),
+        Button(label=Lang['music-pause'], style='1', custom_id='pause', emoji='⏸'),
+        Button(label=Lang['music-resume'], style='1', custom_id='resume', emoji='⏯'),
         Button(label=Lang['music-stop'], style='4', custom_id='stop', emoji='⏹'),
         Button(label=Lang['music-repeat'], style='3', custom_id='repeat', emoji='🔁')],[
         Button(label='50%', style='2', custom_id='volume_-50%', emoji='🔉'),
@@ -1095,11 +1260,10 @@ async def volume(ctx, volume: int=100):
 bot.run(data['token'])
 
 # music bot(skip, play list, favorite), chatfilter, tempban, tempmute, ticket tool
-# slowmode, chprefix
 
 # (voice)channel delete, create
 # role delete, create
 
 # online count, total conut
 
-# volume, custom-status, mute, unmute, auto mute, auto kick, auto ban
+# text channel delete, text channel invisible, slowmode
