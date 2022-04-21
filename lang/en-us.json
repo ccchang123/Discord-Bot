@@ -43,6 +43,10 @@
     "auto-mute-message": " times, muted",
     "auto-kick-message": " times, kicked",
     "auto-ban-message": " times, banned",
+    "channel-deleted": " channel has been deleted",
+    "channel-invisibled": "channel has been invisibled",
+    "slowmode-message": "Set the slowmode delay in this channel to ",
+    "slowmode-seconds": " seconds",
 
     "user-info": "User Information",
     "user-info-name": "Name",
@@ -70,6 +74,8 @@
     "menu-message-copy": "copy current channel",
     "menu-message-copy-delete": "copy and delete current channel",
     "menu-message-clearwarn": "clear the warnings for member",
+    "menu-message-cd": "delete current channel",
+    "menu-message-ci": "make current channel unavailable to other members",
     "menu-message-exit": "end the bot",
     "menu-message-gay": "get the gay level for member",
     "menu-message-kick": "kick a member from server",
@@ -78,6 +84,7 @@
     "menu-message-removeadmin": "remove a member from the administrator list",
     "menu-message-removebypass": "remove a member from the bypass list",
     "menu-message-showwarn": "show warnings for member",
+    "menu-message-slowmoe": "set the slow mode delay for channel",
     "menu-message-time": "get the current time",
     "menu-message-tlm": "send a temp message",
     "menu-message-unban": "unban a member",
@@ -106,6 +113,7 @@
     "repeat-disabled": "repeat mode has beem disabled.",
     "volume-changed": "Volume adjusted from ",
     "volume-changed-to": " to ",
+    "volume-muted": "Bot has been muted",
 
     "debug-enabled": "Debug mode: enabled",
     "debug-disabled": "Debug mode: disabled",
@@ -115,5 +123,6 @@
     "language": " [language file name]",
     "count": " [count]",
     "reason": " (reason)",
-    "someone's": "'s"
+    "someone's": "'s",
+    "category": " [channel ID]"
 }

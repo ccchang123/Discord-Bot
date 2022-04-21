@@ -43,6 +43,10 @@
     "auto-mute-message": " 支，已被禁言",
     "auto-kick-message": " 支，已被踢出伺服器",
     "auto-ban-message": " 支，已被伺服器封锁",
+    "channel-deleted": "频道已删除",
+    "channel-invisibled": "频道已隐藏",
+    "slowmode-message": "慢速模式已设置为 ",
+    "slowmode-seconds": " 秒",
 
     "user-info": "成员资讯",
     "user-info-name": "名称",
@@ -70,6 +74,8 @@
     "menu-message-copy": "复制当前频道",
     "menu-message-copy-delete": "复制并删除当前频道",
     "menu-message-clearwarn": "清除某成员警告",
+    "menu-message-cd": "删除当前频道",
+    "menu-message-ci": "让其他成员无法查看此频道",
     "menu-message-exit": "结束机器人程式",
     "menu-message-gay": "获取成员同性恋值",
     "menu-message-kick": "从伺服器踢出一位玩家",
@@ -78,6 +84,7 @@
     "menu-message-removeadmin": "从管理员名单中移除一个成员",
     "menu-message-removebypass": "从绕过名单中移除一个成员",
     "menu-message-showwarn": "显示某成员的警告数量",
+    "menu-message-slowmoe": "设置频道慢速模式",
     "menu-message-time": "获取当前时间",
     "menu-message-tlm": "发送临时讯息",
     "menu-message-unban": "解除封锁一个成员",
@@ -106,6 +113,7 @@
     "repeat-disabled": "循环播放模式已关闭",
     "volume-changed": "音量已由 ",
     "volume-changed-to": " 调整为 ",
+    "volume-muted": "机器人已静音",
 
     "debug-enabled": "侦错模式: 开启",
     "debug-disabled": "侦错模式: 关闭",
@@ -115,5 +123,6 @@
     "language": " [语言档名称]",
     "count": " [数量]",
     "reason": " (原因)",
-    "someone's": " 的"
+    "someone's": " 的",
+    "category": " [频道ID]"
 }

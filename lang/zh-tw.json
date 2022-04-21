@@ -43,6 +43,10 @@
     "auto-mute-message": " 支，已被禁言",
     "auto-kick-message": " 支，已被踢出伺服器",
     "auto-ban-message": " 支，已被伺服器封鎖",
+    "channel-deleted": "頻道已刪除",
+    "channel-invisibled": "頻道已隱藏",
+    "slowmode-message": "慢速模式已設置為 ",
+    "slowmode-seconds": " 秒",
 
     "user-info": "成員資訊",
     "user-info-name": "名稱",
@@ -70,6 +74,8 @@
     "menu-message-copy": "複製當前頻道",
     "menu-message-copy-delete": "複製並刪除當前頻道",
     "menu-message-clearwarn": "清除某成員警告",
+    "menu-message-cd": "刪除當前頻道",
+    "menu-message-ci": "讓其他成員無法查看此頻道",
     "menu-message-exit": "結束機器人程式",
     "menu-message-gay": "獲取成員同性戀值",
     "menu-message-kick": "從伺服器踢出一位玩家",
@@ -78,6 +84,7 @@
     "menu-message-removeadmin": "從管理員名單中移除一個成員",
     "menu-message-removebypass": "從繞過名單中移除一個成員",
     "menu-message-showwarn": "顯示某成員的警告數量",
+    "menu-message-slowmoe": "設置頻道慢速模式",
     "menu-message-time": "獲取當前時間",
     "menu-message-tlm": "發送臨時訊息",
     "menu-message-unban": "解除封鎖一個成員",
@@ -106,6 +113,7 @@
     "repeat-disabled": "循環播放模式已關閉",
     "volume-changed": "音量已由 ",
     "volume-changed-to": " 調整為 ",
+    "volume-muted": "機器人已靜音",
 
     "debug-enabled": "偵錯模式: 開啟",
     "debug-disabled": "偵錯模式: 關閉",
@@ -115,5 +123,6 @@
     "language": " [語言檔名稱]",
     "count": " [數量]",
     "reason": " (原因)",
-    "someone's": " 的"
+    "someone's": " 的",
+    "category": " [頻道ID]"
 }
