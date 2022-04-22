@@ -964,13 +964,13 @@ global player_repeat
 gPlaylist = []
 player_repeat = False
 
-async def playit():
+async def playit(ctx):
     global gPlaylist
     global player_repeat
     try:
         if not player_repeat:
             gPlaylist.pop(0)
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
         sourcex = gPlaylist[0]
         br = mechanize.Browser()
         try:
@@ -978,43 +978,56 @@ async def playit():
         except:
             pass
         try:
-            ydl_opts = {"format": "bestaudio"}
+            ydl_opts = {
+                'format': 'bestaudio',
+                'noplaylist': False,
+                'default_search': 'auto'
+            }
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(gPlaylist[0], download=False)
-                URL = info["formats"][0]["url"]
+                if 'entries' in info:
+                    Url = info['entries'][0]["formats"][0]['url']
+                elif 'formats' in info:
+                    Url = info["formats"][0]['url']
         except:
-            URL = gPlaylist[0]
-        pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(URL, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
-        bot.voice_clients[0].play(pplayer, after=myafter)
+            Url = gPlaylist[0]
+        pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
+        bot.voice_clients[0].play(pplayer, after = lambda e: myafter(ctx))
+        await music_button_1(ctx, sourcex, info)
     except:
         pass
         
 def myafter(ctx):
-    fut = asyncio.run_coroutine_threadsafe(playit(), bot.loop)
+    fut = asyncio.run_coroutine_threadsafe(playit(ctx), bot.loop)
     fut.result()
 
 async def music_button_1(ctx, url, info):
     global player_repeat, after_volume
-    embed = discord.Embed(title=Lang['music-playing'], description=info['title'], color=0x79EF2F)
-    embed.set_thumbnail(url=info.get('thumbnail'))
+    if 'entries' in info:
+        Info = info['entries'][0]
+    elif 'formats' in info:
+        Info = info[0]['url']
+    embed = discord.Embed(title=Lang['music-playing'], description=Info['title'], color=0x79EF2F)
+    embed.set_thumbnail(url=Info.get('thumbnail'))
 
-    seconds = info['duration']
+    seconds = Info['duration']
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
 
-    embed.add_field(name=Lang['music-uploader'], value=info.get('uploader'), inline=True)
+    embed.add_field(name=Lang['music-uploader'], value=Info.get('uploader'), inline=True)
     embed.add_field(name=Lang['music-duration'], value="%d:%02d:%02d" % (h, m, s), inline=True)
-    embed.add_field(name=Lang['music-like_count'], value=str(info.get('like_count')), inline=True)
+    embed.add_field(name=Lang['music-like_count'], value=str(Info.get('like_count')), inline=True)
     embed.add_field(name=Lang['music-DJ'], value=f'<@{ctx.message.author.id}>', inline=True)
     embed.add_field(name=Lang['music-channel'], value=f'<#{ctx.author.voice.channel.id}>', inline=True)
     embed.set_footer(text=now_time(), icon_url=ctx.author.avatar_url)
     music_info = await ctx.channel.send(embed=embed)
     music_menu = await ctx.send('', components = [[
-        Button(label=Lang['music-link'], style=ButtonStyle.URL, url=url)],[
+        Button(label=Lang['music-link'], style=ButtonStyle.URL, url=Info.get('webpage_url')),
+        Button(label=Lang['music-stop'], style='4', custom_id='stop', emoji='⏹')],[
         Button(label=Lang['music-pause'], style='1', custom_id='pause', emoji='⏸'),
         Button(label=Lang['music-resume'], style='1', custom_id='resume', emoji='⏯'),
-        Button(label=Lang['music-stop'], style='4', custom_id='stop', emoji='⏹'),
-        Button(label=Lang['music-repeat'], style='2', custom_id='repeat', emoji='🔁')],[
+        Button(label=Lang['music-repeat'], style='2', custom_id='repeat', emoji='🔁'),
+        Button(label=Lang['music-skip'], style='2', custom_id='skip', emoji='⏩')],[
         Button(label='50%', style='2', custom_id='volume_-50%', emoji='🔉'),
         Button(label='10%', style='2', custom_id='volume_-10%', emoji='🔉'),
         Button(label='靜音', style='4', custom_id='mute', emoji='🔈'),
@@ -1036,6 +1049,10 @@ async def music_button_1(ctx, url, info):
             elif res == 'resume':
                 await interaction.send(Lang['selected']+res)
                 await resume(ctx)
+            elif res == 'skip':
+                await interaction.send(Lang['selected']+res)
+                await skip(ctx)
+                return
             elif res == 'repeat':
                 await interaction.send(Lang['repeat-enabled'])
                 await repeat(ctx)
@@ -1072,26 +1089,31 @@ async def music_button_1(ctx, url, info):
             pass
 async def music_button_2(ctx, url, info):
     global player_repeat, after_volume
-    embed = discord.Embed(title=Lang['music-playing'], description=info['title'], color=0x79EF2F)
-    embed.set_thumbnail(url=info.get('thumbnail'))
+    if 'entries' in info:
+        Info = info['entries'][0]
+    elif 'formats' in info:
+        Info = info[0]['url']
+    embed = discord.Embed(title=Lang['music-playing'], description=Info['title'], color=0x79EF2F)
+    embed.set_thumbnail(url=Info.get('thumbnail'))
 
-    seconds = info['duration']
+    seconds = Info['duration']
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
 
-    embed.add_field(name=Lang['music-uploader'], value=info.get('uploader'), inline=True)
+    embed.add_field(name=Lang['music-uploader'], value=Info.get('uploader'), inline=True)
     embed.add_field(name=Lang['music-duration'], value="%d:%02d:%02d" % (h, m, s), inline=True)
-    embed.add_field(name=Lang['music-like_count'], value=str(info.get('like_count')), inline=True)
+    embed.add_field(name=Lang['music-like_count'], value=str(Info.get('like_count')), inline=True)
     embed.add_field(name=Lang['music-DJ'], value=f'<@{ctx.message.author.id}>', inline=True)
     embed.add_field(name=Lang['music-channel'], value=f'<#{ctx.author.voice.channel.id}>', inline=True)
     embed.set_footer(text=now_time(), icon_url=ctx.author.avatar_url)
     music_info_2 = await ctx.channel.send(embed=embed)
     music_menu_2 = await ctx.send('', components = [[
-        Button(label=Lang['music-link'], style=ButtonStyle.URL, url=url)],[
+        Button(label=Lang['music-link'], style=ButtonStyle.URL, url=Info.get('webpage_url')),
+        Button(label=Lang['music-stop'], style='4', custom_id='stop', emoji='⏹')],[
         Button(label=Lang['music-pause'], style='1', custom_id='pause', emoji='⏸'),
         Button(label=Lang['music-resume'], style='1', custom_id='resume', emoji='⏯'),
-        Button(label=Lang['music-stop'], style='4', custom_id='stop', emoji='⏹'),
-        Button(label=Lang['music-repeat'], style='3', custom_id='repeat', emoji='🔁')],[
+        Button(label=Lang['music-repeat'], style='3', custom_id='repeat', emoji='🔁'),
+        Button(label=Lang['music-skip'], style='2', custom_id='skip', emoji='⏩')],[
         Button(label='50%', style='2', custom_id='volume_-50%', emoji='🔉'),
         Button(label='10%', style='2', custom_id='volume_-10%', emoji='🔉'),
         Button(label='靜音', style='4', custom_id='mute', emoji='🔈'),
@@ -1113,6 +1135,10 @@ async def music_button_2(ctx, url, info):
             elif res == 'resume':
                 await interaction.send(Lang['selected']+res)
                 await resume(ctx)
+            elif res == 'skip':
+                await interaction.send(Lang['selected']+res)
+                await skip(ctx)
+                return
             elif res == 'repeat':
                 await interaction.send(Lang['repeat-disabled'])
                 await repeat(ctx)
@@ -1162,26 +1188,28 @@ async def play(ctx, url: str=''):
         ydl_opts = {
             'format': 'bestaudio',
             'noplaylist': False,
+            'default_search': 'auto'
         }
         try:
             await voiceChannel.connect()
         except:
             pass
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        gPlaylist.append(url)
+        await ctx.message.add_reaction('✅')
         try:
-            gPlaylist.append(url)
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-                Url = info['formats'][0]['url']
-
+            if 'entries' in info:
+                Url = info['entries'][0]["formats"][0]['url']
+            elif 'formats' in info:
+                Url = info["formats"][0]['url']
             pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
-            voice.play(pplayer, after=myafter)
-            await ctx.message.add_reaction('✅')
-            
+            voice.play(pplayer, after = lambda e: myafter(ctx))
+
             await music_button_1(ctx, url, info)
         except:
-            await ctx.message.add_reaction('❌')
-            await ctx.send(Lang['music-still-playing'])
+            await ctx.send(Lang['playlist_added'])
     
 @bot.command()
 async def connect(ctx):
@@ -1241,7 +1269,8 @@ async def repeat(ctx):
 
 @bot.command()
 async def stop(ctx):
-    global player_repeat
+    global player_repeat, gPlaylist
+    gPlaylist.clear()
     if data['music-bot'] == 'true':
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         player_repeat = False
@@ -1260,6 +1289,18 @@ async def volume(ctx, volume: int=100):
     ctx.voice_client.source.volume = volume / 100
     await ctx.send(Lang['volume-changed']+str(before_volume)+'%'+Lang['volume-changed-to']+str(volume)+'%')
 
+@bot.command()
+async def skip(ctx):
+    global player_repeat
+    if data['music-bot'] == 'true':
+        player_repeat = False
+        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        try:
+            voice.stop()
+        except:
+            await ctx.channel.send(Lang['music-nothing-playing'])
+        return
+
 #
 
 bot.run(data['token'])
@@ -1272,3 +1313,4 @@ bot.run(data['token'])
 # online count, total conut
 
 # text channel delete, text channel invisible, slowmode
+# music bot(skip, play list, serach)
