@@ -97,6 +97,7 @@
     "music-resume": "繼續播放",
     "music-stop": "停止播放",
     "music-repeat": "循環播放",
+    "music-skip": "下一首",
     "music-url-error": "未輸入欲播放歌曲網址",
     "music-user-not-in-channel": "請先加入語音頻道",
     "music-playing": "正在播放: ",
@@ -114,6 +115,7 @@
     "volume-changed": "音量已由 ",
     "volume-changed-to": " 調整為 ",
     "volume-muted": "機器人已靜音",
+    "playlist_added": "已添加至播放清單",
 
     "debug-enabled": "偵錯模式: 開啟",
     "debug-disabled": "偵錯模式: 關閉",

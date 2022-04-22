@@ -97,6 +97,7 @@
     "music-resume": "Resume",
     "music-stop": "Stop",
     "music-repeat": "Repeat",
+    "music-skip": "Skip",
     "music-url-error": "Please type a right url.",
     "music-user-not-in-channel": "Please join a voice channel first.",
     "music-playing": "Now playing: ",
@@ -114,6 +115,7 @@
     "volume-changed": "Volume adjusted from ",
     "volume-changed-to": " to ",
     "volume-muted": "Bot has been muted",
+    "playlist_added": "Added to playlist",
 
     "debug-enabled": "Debug mode: enabled",
     "debug-disabled": "Debug mode: disabled",

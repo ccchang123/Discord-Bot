@@ -97,6 +97,7 @@
     "music-resume": "继续播放",
     "music-stop": "停止播放",
     "music-repeat": "循环播放",
+    "music-skip": "下一首",
     "music-url-error": "未输入欲播放歌曲网址",
     "music-user-not-in-channel": "请先加入语音频道",
     "music-playing": "正在播放: ",
@@ -114,6 +115,7 @@
     "volume-changed": "音量已由 ",
     "volume-changed-to": " 调整为 ",
     "volume-muted": "机器人已静音",
+    "playlist_added": "已添加至播放清单",
 
     "debug-enabled": "侦错模式: 开启",
     "debug-disabled": "侦错模式: 关闭",
