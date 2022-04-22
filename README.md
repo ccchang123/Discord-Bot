@@ -1,5 +1,21 @@
 # Update
 
+## v2.4.3
+### add some command to management your server.
+> cd
+>
+> ci
+>
+> slowmode
+
+### add some features of music bot
+> playlist
+> 
+> skip the music
+> 
+> search the music of keyword
+
+## v2.3.0
 ### add some command to management your server.
 > addadmin
 > 
