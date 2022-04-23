@@ -27,46 +27,19 @@ if os.path.isfile('Discord-Bot-main.zip'):
 print('Copyright © 2022 cc_chang.','All rights reserved.',sep='\n' ,end='\n\n')
 print('View more information in github:', 'https://github.com/ccchang123/Discord-Bot.git','---------------------------------------------',sep='\n')
 
-check_config = os.path.isfile('config.json')
-if check_config == False:
+if not os.path.isfile('config.json'):
     print('load config file --- fail')
     self_test.error()
 else:
     print('load config file --- ok')
     import lang
 
-check_warns = os.path.isfile('warns.json')
-if check_warns == False:
-    print('load warns file --- fail')
-    self_test.error()
-else:
-    print('load warns file --- ok')
-
-check_admin = os.path.isfile('admin.json')
-if check_admin == False:
-    print('load admin file --- fail')
-    self_test.error()
-else:
-    print('load admin file --- ok')
-
-check_bypass = os.path.isfile('bypass.json')
-if check_bypass == False:
-    print('load bypass file --- fail')
-    self_test.error()
-else:
-    print('load bypass file --- ok')
-
-check_lang = os.path.isdir('lang/')
-if check_lang == False:
-    print('load lang folder --- fail',end='\n\n')
-    self_test.error()
-else:
-    print('load lang folder --- ok',end='\n\n')
-
-#
+self_test.check_file()
 
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
+
+#
 
 def load_admin_bypass():
     global bypass_list, admin_list
@@ -642,18 +615,20 @@ async def RESET(ctx):
             await ctx.send(Lang['reset-error'], delete_after=3)
             return
         if ctx.author.id == int(data['owner-id']):
-            await ctx.send('確定執行此操作?', components = [[
-                Button(label='確定', style='3', custom_id='confirm'),
-                Button(label='取消', style='4', custom_id='cancel')
+            reset_confirm = await ctx.reply(Lang['RESET-confirm'], components = [[
+                Button(label=Lang['RESET-confirm-button'], style='3', custom_id='confirm'),
+                Button(label=Lang['RESET-cancel-button'], style='4', custom_id='cancel')
             ]])
             interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
             res = interaction.custom_id
             if res == 'confirm':
-                await interaction.send('已成功重置所有資料')
+                await reset_confirm.delete()
+                await interaction.send(Lang['RESET-resetted'])
                 reset.reset_config()
                 sys.exit()
             else:
-                await interaction.send('已取消此指令')
+                await reset_confirm.delete()
+                await interaction.send(Lang['RESET-canceled'])
         else:
             await error_code.permission(ctx, Lang)
         

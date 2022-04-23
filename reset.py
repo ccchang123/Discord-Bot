@@ -59,15 +59,11 @@ admin = {
 }
 
 def reset_config():
-    reset_config = json.dumps(config, indent = 4)
-    reset_warns = json.dumps(warns, indent = 4)
-    reset_bypass = json.dumps(bypass, indent = 4)
-    reset_admin = json.dumps(admin, indent = 4)
     with open("config.json", "w") as config_file:
-        config_file.write(reset_config)
+        json.dump(config, config_file, indent = 4)
     with open("warns.json", "w") as warns_file:
-        warns_file.write(reset_warns)
+        json.dump(warns, warns_file, indent = 4)
     with open("bypass.json", "w") as bypass_file:
-        bypass_file.write(reset_bypass)
+        json.dump(bypass, bypass_file, indent = 4)
     with open("admin.json", "w") as admin_file:
-        admin_file.write(reset_admin)
+        json.dump(admin, admin_file, indent = 4)
