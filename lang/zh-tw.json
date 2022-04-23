@@ -47,6 +47,11 @@
     "channel-invisibled": "頻道已隱藏",
     "slowmode-message": "慢速模式已設置為 ",
     "slowmode-seconds": " 秒",
+    "RESET-confirm": "確定執行此操作?",
+    "RESET-confirm-button": "確定",
+    "RESET-cancel-button": "取消",
+    "RESET-resetted": "已成功重置所有資料",
+    "RESET-canceled": "已取消此指令",
 
     "user-info": "成員資訊",
     "user-info-name": "名稱",

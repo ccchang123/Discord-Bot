@@ -47,6 +47,11 @@
     "channel-invisibled": "channel has been invisibled",
     "slowmode-message": "Set the slowmode delay in this channel to ",
     "slowmode-seconds": " seconds",
+    "RESET-confirm": "Are you sure you want to perform this operation?",
+    "RESET-confirm-button": "confirm",
+    "RESET-cancel-button": "cancel",
+    "RESET-resetted": "Successfully reset all data",
+    "RESET-canceled": "This command has been canceled",
 
     "user-info": "User Information",
     "user-info-name": "Name",
