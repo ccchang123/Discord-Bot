@@ -9,6 +9,8 @@
     "create-category-id": "000000000000000000",
     "picture-only-channel-id": "000000000000000000",
 
+	"chat-filter": "true",
+
     "debug-mode": "false",
 
     "command-addadmin": "true",
@@ -32,6 +34,8 @@
     "command-slowmode": "true",
     "command-time": "true",
     "command-tlm": "true",
+	"command-tempban": "true",
+    "command-tempmute": "true",
     "command-unban": "true",
     "command-unmute": "true",
     "command-uinfo": "true",

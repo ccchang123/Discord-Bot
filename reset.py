@@ -11,6 +11,8 @@ config = {
     "create-category-id": "000000000000000000",
     "picture-only-channel-id": "000000000000000000",
 
+    "chat-filter": "true",
+
     "debug-mode": "false",
 
     "command-addadmin": "true",
@@ -34,6 +36,8 @@ config = {
     "command-slowmode": "true",
     "command-time": "true",
     "command-tlm": "true",
+    "command-tempban": "true",
+    "command-tempmute": "true",
     "command-unban": "true",
     "command-unmute": "true",
     "command-uinfo": "true",
@@ -67,3 +71,5 @@ def reset_config():
         json.dump(bypass, bypass_file, indent = 4)
     with open("admin.json", "w") as admin_file:
         json.dump(admin, admin_file, indent = 4)
+    with open('chatfilter.txt', 'w') as chatfilter_file:
+        chatfilter_file.write('')

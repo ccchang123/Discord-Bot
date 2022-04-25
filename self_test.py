@@ -68,6 +68,12 @@ def check_file():
         error()
     else:
         print('load bypass file --- ok')
+    
+    if not os.path.isfile('chatfilter.txt'):
+        print('load chatfilter file --- fail')
+        error()
+    else:
+        print('load chatfilter file --- ok')
 
     if not os.path.isdir('lang/'):
         print('load lang folder --- fail',end='\n\n')
