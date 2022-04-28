@@ -1,6 +1,5 @@
-import json
-
 config = {
+    "version": "2.6.0",
     "language": "",
     "token": "",
     "command-prefix": "",
@@ -10,8 +9,13 @@ config = {
     "local-channel-id": "000000000000000000",
     "create-category-id": "000000000000000000",
     "picture-only-channel-id": "000000000000000000",
+    "ticket-category-id": "000000000000000000",
+    "auto-mute": "",
+    "auto-kick": "",
+    "auto-ban": "",
 
     "chat-filter": "true",
+    "chat-filter-action": "warn",
 
     "debug-mode": "false",
 
@@ -29,11 +33,13 @@ config = {
     "command-gay": "true",
     "command-kick": "true",
     "command-mute": "true",
+    "command-ping": "true",
     "command-reload": "true",
     "command-removeadmin": "true",
     "command-removebypass": "true",
 	"command-showwarn": "true",
     "command-slowmode": "true",
+    "command-send": "true",
     "command-time": "true",
     "command-tlm": "true",
     "command-tempban": "true",
@@ -52,24 +58,23 @@ warns = {
 
 }
 
-bypass = {
-    "It is a example_1": "000000000000000000",
-    "It is a example_2": "000000000000000000"
+userdata = {
+    "admin": {
+
+    },
+    "bypass":  {
+
+    }
 }
 
-admin = {
-    "It is a example_1": "000000000000000000",
-    "It is a example_2": "000000000000000000"
-}
+import json
 
 def reset_config():
     with open("config.json", "w") as config_file:
         json.dump(config, config_file, indent = 4)
     with open("warns.json", "w") as warns_file:
         json.dump(warns, warns_file, indent = 4)
-    with open("bypass.json", "w") as bypass_file:
-        json.dump(bypass, bypass_file, indent = 4)
-    with open("admin.json", "w") as admin_file:
-        json.dump(admin, admin_file, indent = 4)
+    with open("userdata.json", "w") as bypass_file:
+        json.dump(userdata, bypass_file, indent = 4)
     with open('chatfilter.txt', 'w') as chatfilter_file:
         chatfilter_file.write('')

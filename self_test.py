@@ -1,4 +1,4 @@
-import os
+import os, json
 
 def error():
     error = input('Press Enter to continue')
@@ -42,39 +42,33 @@ def check(data, lang_list):
         if data['debug-mode'] == 'true':
             print('load owner-id setting --- ok')
 
-    if data['local-channel-id'] == '' or data['create-category-id'] == '' or data['picture-only-channel-id'] == '':
+    if data['local-channel-id'] == '' or data['create-category-id'] == '' or data['picture-only-channel-id'] == '' or data['ticket-category-id'] == '':
         if data['debug-mode'] == 'true':
-           print('load channel-id setting --- fail',end='\n\n')
+           print('load channel-id setting --- fail')
         error()
     else:
         if data['debug-mode'] == 'true':
-            print('load channel-id setting --- ok',end='\n\n')
+            print('load channel-id setting --- ok')
+
+    with open('config.json', "r", encoding="utf8") as file:
+        data = json.load(file)
+    data_list = list(data.values())
+    if data_list[14] != 'true' and 'false':
+        print('in config setting:', data_list[14],'<-- only can be "true" or "false"')
+        error()
+    for i in range(16, len(data_list)):
+        if data_list[i] != 'true' and 'false':
+            print('in config setting:', data_list[i],'<-- only can be "true" or "false"')
+            error()
 
 def check_file():
-    if not os.path.isfile('warns.json'):
-        print('load warns file --- fail')
-        error()
-    else:
-        print('load warns file --- ok')
-
-    if not os.path.isfile('admin.json'):
-        print('load admin file --- fail')
-        error()
-    else:
-        print('load admin file --- ok')
-
-    if not os.path.isfile('bypass.json'):
-        print('load bypass file --- fail')
-        error()
-    else:
-        print('load bypass file --- ok')
-    
-    if not os.path.isfile('chatfilter.txt'):
-        print('load chatfilter file --- fail')
-        error()
-    else:
-        print('load chatfilter file --- ok')
-
+    file_list = ['warns.json', 'userdata.json', 'chatfilter.txt', 'favorite.json']
+    for file in file_list:
+        if not os.path.isfile(file):
+            print(f'load {file} file --- fail')
+            error()
+        else:
+            print(f'load {file} file --- ok')
     if not os.path.isdir('lang/'):
         print('load lang folder --- fail',end='\n\n')
         error()

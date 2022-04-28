@@ -1,4 +1,5 @@
 {
+	"version": "2.6.0",
     "language": "",
     "token": "",
     "command-prefix": "",
@@ -8,8 +9,13 @@
     "local-channel-id": "000000000000000000",
     "create-category-id": "000000000000000000",
     "picture-only-channel-id": "000000000000000000",
+	"ticket-category-id": "000000000000000000",
+    "auto-mute": "",
+    "auto-kick": "",
+    "auto-ban": "",
 
-	"chat-filter": "true",
+    "chat-filter": "true",
+    "chat-filter-action": "warn",
 
     "debug-mode": "false",
 
@@ -27,14 +33,16 @@
     "command-gay": "true",
     "command-kick": "true",
     "command-mute": "true",
+    "command-ping": "true",
     "command-reload": "true",
     "command-removeadmin": "true",
     "command-removebypass": "true",
 	"command-showwarn": "true",
     "command-slowmode": "true",
+	"command-send": "true",
     "command-time": "true",
     "command-tlm": "true",
-	"command-tempban": "true",
+    "command-tempban": "true",
     "command-tempmute": "true",
     "command-unban": "true",
     "command-unmute": "true",
