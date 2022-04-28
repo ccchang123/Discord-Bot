@@ -44,21 +44,24 @@ def check(data, lang_list):
 
     if data['local-channel-id'] == '' or data['create-category-id'] == '' or data['picture-only-channel-id'] == '' or data['ticket-category-id'] == '':
         if data['debug-mode'] == 'true':
-           print('load channel-id setting --- fail')
+           print('load channel-id setting --- fail',end='\n\n')
         error()
     else:
         if data['debug-mode'] == 'true':
-            print('load channel-id setting --- ok')
+            print('load channel-id setting --- ok',end='\n\n')
 
     with open('config.json', "r", encoding="utf8") as file:
         data = json.load(file)
     data_list = list(data.values())
-    if data_list[14] != 'true' and 'false':
-        print('in config setting:', data_list[14],'<-- only can be "true" or "false"')
+    bool_list = ['true', 'false']
+    if data_list[14] not in bool_list:
+        if data['debug-mode'] == 'true':
+            print('in config setting:', data_list[14],'<-- only can be "true" or "false"')
         error()
     for i in range(16, len(data_list)):
         if data_list[i] != 'true' and 'false':
-            print('in config setting:', data_list[i],'<-- only can be "true" or "false"')
+            if data['debug-mode'] == 'true':
+                print('in config setting:', data_list[i],'<-- only can be "true" or "false"')
             error()
 
 def check_file():
