@@ -1,2 +1,10 @@
-'[a-zA-Z0-9\-\.]+\s?(\.|dot|\(dot\)|-|;|:|,|_|\/)\s?([a-zA-Z]{2}|aero|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel)\b'
-\b[0-9]{1,3}(\.|dot|\(dot\)|-|;|:|,|(\W|\d|_)*\s)+[0-9]{1,3}(\.|dot|\(dot\)|-|;|:|,|(\W|\d|_)*\s)+[0-9]{1,3}(\.|dot|\(dot\)|-|;|:|,|(\W|\d|_)*\s)+[0-9]{1,3}\b
+ Chat filter use Regular Expression(regex) to filter the message.
+ Each line represents a filter word.
+ Please edit me even if you don't want to use it.
+ If you want to disable it, please delete all content.
+ For example:
+
+(hello world)
+([0-9])
+(f|F)+(u|U)+(c|C)+(k|K)
+
