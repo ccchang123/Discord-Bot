@@ -1,5 +1,5 @@
 config = {
-    "version": "2.6.3",
+    "version": "2.6.2",
     "language": "",
     "token": "",
     "command-prefix": "",
