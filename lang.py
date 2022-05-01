@@ -7,10 +7,7 @@ def add_lang():
         if i.endswith(".json"):
             print('find the language file:',i)
 
-with open('config.json', "r", encoding = "utf8") as file:
-    data = json.load(file)
-
-async def chlang_check(message, lang, Lang):
+async def chlang_check(message, lang, Lang, data):
     check_config = os.path.isfile('lang/'+lang+'.json')
     if check_config == False:
         await message.channel.send(Lang['language-error'])
@@ -21,7 +18,7 @@ async def chlang_check(message, lang, Lang):
         if data['debug-mode'] == 'true':
             print('load '+lang+' file --- ok')
 
-def lang_chose(sele, lang_list):
+def lang_chose(sele, lang_list, data):
     for i in lang_list:
         if sele == i:
             select = 'lang/'+i+'.json'
