@@ -56,7 +56,7 @@ config = {
 }
 
 
-warns = {
+salt = {
 
 }
 
@@ -77,8 +77,8 @@ import json
 def reset_config():
     with open("config.json", "w") as config_file:
         json.dump(config, config_file, indent = 4)
-    with open("warns.json", "w") as warns_file:
-        json.dump(warns, warns_file, indent = 4)
+    with open("salt.json", "w") as salt_file:
+        json.dump(salt, salt_file, indent = 4)
     with open("userdata.json", "w") as bypass_file:
         json.dump(userdata, bypass_file, indent = 4)
     with open('chatfilter.txt', 'w') as chatfilter_file:
