@@ -1,5 +1,5 @@
 config = {
-    "version": "2.6.2",
+    "version": "2.6.3",
     "language": "",
     "token": "",
     "command-prefix": "",
@@ -65,6 +65,9 @@ userdata = {
 
     },
     "bypass":  {
+
+    },
+    "warns":  {
 
     }
 }

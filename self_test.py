@@ -74,7 +74,7 @@ def check_config():
             error()
 
 def check_file():
-    file_list = ['warns.json', 'userdata.json', 'chatfilter.txt', 'favorite.json']
+    file_list = ['userdata.json', 'chatfilter.txt', 'favorite.json']
     for file in file_list:
         if not os.path.isfile(file):
             print(f'load {file} file --- fail')

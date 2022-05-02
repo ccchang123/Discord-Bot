@@ -28,8 +28,24 @@ if not os.path.isdir('C:\\ffmpeg'):
 if os.path.isfile('Discord-Bot-main.zip'):
     os.remove('Discord-Bot-main.zip')
 
-print('---------------------------------------------\n','Copyright © 2022 cc_chang.','All rights reserved.',sep='\n' ,end='\n\n')
-print('View more information in github:', 'https://github.com/ccchang123/Discord-Bot.git\n','---------------------------------------------',sep='\n')
+def copyright():
+    info = """-------------------------------------------------------\n
+            Ivrj zber vasbezngvba va tvguho:
+                 uggcf://ovg.yl/3S2wwFd\n
+                         Jvxv:
+                 uggcf://ovg.yl/3YNo42k\n
+                     Vaivgr gur obg:
+                 uggcf://ovg.yl/3l0ysWZ\n
+    Pbclevtug © 2022 pp_punat. Nyy evtugf erfreirq.\n
+-------------------------------------------------------"""
+    d = {}
+    for c in (65, 97):
+        for i in range(26):
+            d[chr(i+c)] = chr((i+13) % 26 + c)
+    copyright_world = "".join([d.get(c, c) for c in info])
+    return copyright_world
+
+print(copyright())
 
 if not os.path.isfile('config.json'):
     print('load config file --- fail')
@@ -48,11 +64,11 @@ with open('chatfilter.txt', "r", encoding = "utf8") as words:
     badwords = words.read().split()
 #
 
-version = '3e65d6869bc3b4aa360e88d279f55801d01ca8b9e13878fe0c4ec096ec84e1b1dac1a4263c32259d288f5ec2e58979745943a2f4839c7e6a577531802b227838'
+version = 'bc587b6c67d9a909c12bd8142d32c40398a90206a627ba4db9f6c22646f91f7b329082b8414bdb78a216884d494af2258e4e4a3af576b9e16310a89895051e16'
 self_test.check_version(data, version)
 
 def load_admin_bypass():
-    global userdata_keys, userdata_values
+    global user_data, userdata_keys, userdata_values
     with open('userdata.json', "r", encoding = "utf8") as userdata_file:
         user_data = json.load(userdata_file)
     userdata_keys = list(user_data.keys())
@@ -79,7 +95,6 @@ if data['debug-mode']:
 else:
     print(Lang['debug-disabled'])
 
-sha512= hashlib.sha512()
 prefix = data['command-prefix']
 intents = discord.Intents.all()
 intents.members = True
@@ -91,6 +106,17 @@ def now_time():
     now = datetime.now()
     date_time = '<'+now.strftime("%Y-%m-%d, %H:%M:%S")+'>'
     return date_time
+
+with open('salt.json', "r", encoding = "utf8") as salt_file:
+    user_salt = json.load(salt_file)
+
+def salt(id):
+    global user_salt
+    salt = ''.join(random.sample('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+-*/=~`!@#$%^&(){}[]\'<>?\\|,0123456789:;_', 16))
+    if not user_salt.__contains__(str(id)):
+        user_salt[str(id)] = str(salt)
+    with open("salt.json", "w") as salt_file:
+        json.dump(user_salt, salt_file, indent = 4)
 
 tracemalloc.start()
 
@@ -302,8 +328,14 @@ async def addadmin(ctx, user: discord.Member=None):
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'addadmin '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
-            elif str(user.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
-                embed=discord.Embed(title=Lang['admin-had'], color=0xEC2E2E)
+                return
+            salt(user.id)
+            sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
+            sha1.update(str(user.id).encode('utf-8'))
+            sha512= hashlib.sha512()
+            sha512.update(str(user).encode('utf-8'))
+            if str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
+                embed=discord.Embed(title='❌｜'+Lang['admin-had'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
             else:
                 userdata_dict = {}
@@ -317,8 +349,7 @@ async def addadmin(ctx, user: discord.Member=None):
                     userdata_dict[userdata_keys[i]] = userdata_values[i]
                 userdata_values_dict = userdata_values[userdata_keys.index('admin')]
                 userdata_new_dict = userdata_values_dict[str(ctx.guild.id)]
-                sha512.update(str(user).encode('utf-8'))
-                userdata_new_dict[str(sha512.hexdigest())] = str(user.id)
+                userdata_new_dict[str(sha512.hexdigest())] = str(sha1.hexdigest())
                 userdata_dict['admin'][str(ctx.guild.id)] = userdata_new_dict
                 with open("userdata.json", "w") as userdata_file:
                     json.dump(userdata_dict, userdata_file, indent = 4)
@@ -337,8 +368,13 @@ async def addbypass(ctx, user: discord.Member=None):
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'addbypass '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
-            elif str(user.id) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
-                embed=discord.Embed(title=Lang['bypass-had'], color=0xEC2E2E)
+            salt(user.id)
+            sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
+            sha1.update(str(user.id).encode('utf-8'))
+            sha512= hashlib.sha512()
+            sha512.update(str(user).encode('utf-8'))
+            if str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
+                embed=discord.Embed(title='❌｜'+Lang['bypass-had'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
             else:
                 userdata_dict = {}
@@ -352,8 +388,7 @@ async def addbypass(ctx, user: discord.Member=None):
                     userdata_dict[userdata_keys[i]] = userdata_values[i]
                 userdata_values_dict = userdata_values[userdata_keys.index('bypass')]
                 userdata_new_dict = userdata_values_dict[str(ctx.guild.id)]
-                sha512.update(str(user).encode('utf-8'))
-                userdata_new_dict[str(sha512.hexdigest())] = str(user.id)
+                userdata_new_dict[str(sha512.hexdigest())] = str(sha1.hexdigest())
                 userdata_dict['bypass'][str(ctx.guild.id)] = userdata_new_dict
                 with open("userdata.json", "w") as userdata_file:
                     json.dump(userdata_dict, userdata_file, indent = 4)
@@ -367,6 +402,10 @@ async def addbypass(ctx, user: discord.Member=None):
 @bot.command()
 async def ban(ctx, user: discord.Member=None, options='None', *, reason='None'):
     if data['commands']['ban']:
+        ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+        user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
+        user_sha1.update(str(user.id).encode('utf-8'))
         await ctx.message.delete()
         if not user:
             embed = discord.Embed(title=Lang['usage'], description=prefix+'ban '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
@@ -380,8 +419,8 @@ async def ban(ctx, user: discord.Member=None, options='None', *, reason='None'):
             await ctx.guild.ban(user, reason=reason)
             await ctx.channel.send(embed=embed)
             print(now_time(), str(user), Lang['user-banned'], Lang['warn-reason'], reason)
-        elif ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
-            if str(user.id) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
+        elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
                 await error_code.bypass(ctx, Lang)
             else:
                 embed=discord.Embed(title=str(user)+Lang['user-banned'], description=Lang['warn-reason']+options, color=0x81FA28)
@@ -398,7 +437,9 @@ async def ban(ctx, user: discord.Member=None, options='None', *, reason='None'):
 @bot.command()
 async def clear(ctx, limit=0, member: discord.Member=None):
     if data['commands']['clear']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             await ctx.message.delete()
             if limit == 0:
                 embed = discord.Embed(title=Lang['usage'], description='', color=0xEC2E2E)
@@ -426,7 +467,9 @@ async def clear(ctx, limit=0, member: discord.Member=None):
 async def chlang(ctx, language=''):
     global Lang
     if data['commands']['chlang']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             await ctx.message.delete()
             if language == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'chlang '+Lang['language'], color=0xEC2E2E)
@@ -447,7 +490,9 @@ async def chlang(ctx, language=''):
 @bot.command()
 async def chact(ctx, *, act=''):
     if data['commands']['chact']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             await ctx.message.delete()
             if act == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'chact '+Lang['message'], color=0xEC2E2E)
@@ -463,7 +508,9 @@ async def chact(ctx, *, act=''):
 @bot.command()
 async def copy(ctx, delete=''):
     if data['commands']['copy']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             await ctx.message.delete()
             if delete == '':
                 await ctx.channel.clone()
@@ -478,39 +525,54 @@ async def copy(ctx, delete=''):
 @bot.command()
 async def clearwarn(ctx, member: discord.Member=None, options=''):
     if data['commands']['clearwarn']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+        member_sha1 = hashlib.sha1(user_salt[str(member.id)].encode('utf-8'))
+        member_sha1.update(str(member.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             if not member:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'clearwarn '+Lang['@user']+' (-a)', color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
-                with open('warns.json', 'r') as f:
-                    warns = json.load(f)
-                    if not warns.__contains__(str(ctx.guild.id)) or int(warns[str(ctx.guild.id)][str(member.id)]) == 0:
-                        await ctx.channel.send(Lang['user-nowarn'])
-                        return
-                    else:
-                        if options == '':
-                            amount = int(warns[str(ctx.guild.id)][str(member.id)]) - 1
-                            warns[str(ctx.guild.id)][str(member.id)] = str(amount)
-                            with open('warns.json', 'w') as f:
-                                json.dump(warns, f, indent = 4)
-                            embed = discord.Embed(title=member.name+Lang['warn-amount']+warns[str(ctx.guild.id)][str(member.id)], color=0xEC2E2E)
-                            await ctx.channel.send(embed=embed)
-                            print(now_time(), str(member), Lang['warn-amount'], warns[str(ctx.guild.id)][str(member.id)])
-                        elif options == '-a':
-                            warns[str(ctx.guild.id)][str(member.id)] = '0'
-                            with open('warns.json', 'w') as f:
-                                json.dump(warns, f, indent = 4)
-                            embed = discord.Embed(title=member.name+Lang['warn-cleared-all'], color=0xEC2E2E)
-                            await ctx.channel.send(embed=embed)
-                            print(now_time(), str(member), Lang['warn-cleared-all'])
+                if int(user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())]) == 0:
+                    await ctx.channel.send(Lang['user-nowarn'])
+                    return
+                else:
+                    with open('userdata.json', 'w') as f:
+                        json.dump(user_data, f, indent = 4)
+                    clearwarn_dict = {}
+                    clearwarn_values_dict = {}
+                    clearwarn_new_dict = {}
+                    if options == '':
+                        for i in range(len(userdata_keys)):
+                            clearwarn_dict[userdata_keys[i]] = userdata_values[i]
+                        clearwarn_values_dict = userdata_values[userdata_keys.index('warns')]
+                        clearwarn_new_dict = clearwarn_values_dict[str(ctx.guild.id)]
+                        clearwarn_new_dict[str(member_sha1.hexdigest())] = str(int(user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())]) - 1)
+                        clearwarn_dict['warns'][str(ctx.guild.id)] = clearwarn_new_dict
+                        with open('userdata.json', 'w') as f:
+                            json.dump(clearwarn_dict, f, indent = 4)
+                        load_admin_bypass()
+                        embed = discord.Embed(title=member.name+Lang['warn-amount']+user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())], color=0xEC2E2E)
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), str(member), Lang['warn-amount'], user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())])
+                    elif options == '-a':
+                        user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())] = '0'
+                        with open('userdata.json', 'w') as f:
+                            json.dump(user_data, f, indent = 4)
+                        load_admin_bypass()
+                        embed = discord.Embed(title=member.name+Lang['warn-cleared-all'], color=0xEC2E2E)
+                        await ctx.channel.send(embed=embed)
+                        print(now_time(), str(member), Lang['warn-cleared-all'])
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
 async def cd(ctx):
     if data['commands']['cd']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             await ctx.channel.delete()
             print(now_time(), ctx.channel, Lang['channel-deleted'])
         else:
@@ -519,7 +581,9 @@ async def cd(ctx):
 @bot.command()
 async def ci(ctx):
     if data['commands']['ci']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             await ctx.message.delete()
             await ctx.channel.set_permissions(ctx.guild.default_role, send_messages=False, view_channel=False)
             await ctx.send(Lang['channel-invisibled'])
@@ -530,10 +594,12 @@ async def ci(ctx):
 @bot.command()
 async def exit(ctx):
     if data['commands']['exit']:
-        if ctx.author.id != data['owner-id']:
-            await ctx.send(Lang['not-owner'], delete_after=3)
-            return
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            if ctx.author.id != data['owner-id']:
+                await ctx.send(Lang['not-owner'], delete_after=3)
+                return
             await ctx.message.delete()
             game = discord.Game(now_time())
             await bot.change_presence(status=discord.Status.offline, activity=game)
@@ -559,6 +625,10 @@ async def gay(ctx, member: discord.Member=None):
 @bot.command()
 async def kick(ctx, user: discord.Member=None, options='None', *, reason='None'):
     if data['commands']['kick']:
+        ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+        user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
+        user_sha1.update(str(user.id).encode('utf-8'))
         await ctx.message.delete()
         if not user:
             embed = discord.Embed(title=Lang['usage'], description=prefix+'kick '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
@@ -572,8 +642,8 @@ async def kick(ctx, user: discord.Member=None, options='None', *, reason='None')
             await ctx.guild.kick(user)
             await ctx.channel.send(embed=embed)
             print(now_time(), str(user), Lang['user-kicked'], Lang['warn-reason'], reason)
-        elif ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
-            if str(user.id) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
+        elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
                 await error_code.bypass(ctx, Lang)
             else:
                 embed=discord.Embed(title=str(user)+Lang['user-kicked'], description=Lang['warn-reason']+options, color=0x81FA28)
@@ -590,6 +660,10 @@ async def kick(ctx, user: discord.Member=None, options='None', *, reason='None')
 @bot.command()
 async def mute(ctx, user: discord.Member=None, options='None', *, reason='None'):
     if data['commands']['mute']:
+        ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+        user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
+        user_sha1.update(str(user.id).encode('utf-8'))
         if not user:
             embed = discord.Embed(title=Lang['usage'], description=prefix+'mute '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed, delete_after=5)
@@ -608,8 +682,8 @@ async def mute(ctx, user: discord.Member=None, options='None', *, reason='None')
             await ctx.channel.send(embed=embed)
             await user.send(embed=embed)
             print(now_time(), str(user), Lang['user-muted'], Lang['warn-reason'], reason)
-        elif ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
-            if str(user.id) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
+        elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
                 await error_code.bypass(ctx, Lang)
             else:
                 guild = ctx.guild
@@ -709,13 +783,15 @@ async def RESET(ctx):
 async def reload(ctx):
     global data, prefix, Lang, badwords
     if data['commands']['reload']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             await ctx.message.delete()
             add_lang()
             load_admin_bypass()
             data = json.load(open('config.json'))
             prefix = data['command-prefix']
-            Lang = lang.lang_chose(data['language'], lang_list)
+            Lang = lang.lang_chose(data['language'], lang_list, data)
             with open('chatfilter.txt', "r", encoding = "utf8") as words:
                 badwords = words.read().split()
             if data['custom-activity'] != '':
@@ -748,6 +824,7 @@ async def removeadmin(ctx, user: discord.Member=None):
                 userdata_keys = list(user_data.keys())
                 userdata_values = list(user_data.values())
                 try:
+                    sha512= hashlib.sha512()
                     sha512.update(str(user).encode('utf-8'))
                     del user_data['admin'][str(ctx.guild.id)][str(sha512.hexdigest())]
                     for i in range(len(userdata_keys)):
@@ -780,6 +857,7 @@ async def removebypass(ctx, user: discord.Member=None):
                 userdata_keys = list(user_data.keys())
                 userdata_values = list(user_data.values())
                 try:
+                    sha512= hashlib.sha512()
                     sha512.update(str(user).encode('utf-8'))
                     del user_data['bypass'][str(ctx.guild.id)][str(sha512.hexdigest())]
                     for i in range(len(userdata_keys)):
@@ -787,9 +865,9 @@ async def removebypass(ctx, user: discord.Member=None):
                     with open("userdata.json", "w") as userdata_file:
                         json.dump(userdata_dict, userdata_file, indent = 4)
                     load_admin_bypass()
-                    embed=discord.Embed(title=str(user)+Lang['admin-removed'], color=0x81FA28)
+                    embed=discord.Embed(title=str(user)+Lang['bypass-removed'], color=0x81FA28)
                     await ctx.channel.send(embed=embed)
-                    print(now_time(), str(user)+Lang['admin-removed'])
+                    print(now_time(), str(user)+Lang['bypass-removed'])
                 except:
                     embed=discord.Embed(title='❌｜'+Lang['not-in-bypass'], color=0xEC2E2E)
                     await ctx.channel.send(embed=embed)
@@ -801,22 +879,26 @@ async def removebypass(ctx, user: discord.Member=None):
 @bot.command()
 async def showwarn(ctx, member: discord.Member=None):
     if data['commands']['showwarn']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+        member_sha1 = hashlib.sha1(user_salt[str(member.id)].encode('utf-8'))
+        member_sha1.update(str(member.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             if not member:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'showwarn '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
-                with open('warns.json', 'r') as f:
-                    warns = json.load(f)
-                    embed = discord.Embed(title=member.name+Lang['warn-amount']+warns[str(ctx.guild.id)][str(member.id)], color=0xEC2E2E)
-                    await ctx.channel.send(embed=embed)
+                embed = discord.Embed(title=member.name+Lang['warn-amount']+user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())], color=0xEC2E2E)
+                await ctx.channel.send(embed=embed)
         else:
             await error_code.permission(ctx, Lang)
 
 @bot.command()
 async def slowmode(ctx, seconds: int=0):
     if data['commands']['slowmode']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             await ctx.channel.edit(slowmode_delay=seconds)
             embed = discord.Embed(title=Lang['slowmode-message']+str(seconds)+Lang['slowmode-seconds'], color=0xEC2E2E)
             await ctx.send(embed=embed) 
@@ -826,8 +908,10 @@ async def slowmode(ctx, seconds: int=0):
 @bot.command()
 async def send(ctx, user: discord.Member=None, *, message=''):
     if data['commands']['send']:
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
         await ctx.message.delete()
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             if message == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'send '+Lang['message'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -851,7 +935,9 @@ async def time(ctx):
 @bot.command()
 async def tlm(ctx, seconds: int=600, *,  message=''):
     if data['commands']['tlm']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             await ctx.message.delete()
             if message == '':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'tlm '+Lang['message'], color=0xEC2E2E)
@@ -866,6 +952,10 @@ async def tlm(ctx, seconds: int=600, *,  message=''):
 @bot.command()
 async def tempmute(ctx, user: discord.Member=None, duration='0s', options='None', *, reason='None'):
     if data['commands']['tempmute']:
+        ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+        user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
+        user_sha1.update(str(user.id).encode('utf-8'))
         if not user:
             embed = discord.Embed(title=Lang['usage'], description=prefix+'tempmute '+Lang['@user']+Lang['duration']+Lang['reason'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed, delete_after=5)
@@ -896,8 +986,8 @@ async def tempmute(ctx, user: discord.Member=None, duration='0s', options='None'
                 uptime = int(time_dic['d']) * 24 * 60 * 60 + int(time_dic['h']) * 3600 + int(time_dic['m']) * 60 + int(time_dic['s'])
             await asyncio.sleep(uptime)
             await user.remove_roles(mutedRole)
-        elif ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
-            if str(user.id) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
+        elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
                 await error_code.bypass(ctx, Lang)
             else:
                 guild = ctx.guild
@@ -932,6 +1022,10 @@ async def tempmute(ctx, user: discord.Member=None, duration='0s', options='None'
 @bot.command()
 async def tempban(ctx, user: discord.Member=None, duration='0s', options='None', *, reason='None'):
     if data['commands']['tempban']:
+        ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+        user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
+        user_sha1.update(str(user.id).encode('utf-8'))
         if not user:
             embed = discord.Embed(title=Lang['usage'], description=prefix+'tempban '+Lang['@user']+Lang['duration']+Lang['reason'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed, delete_after=5)
@@ -956,8 +1050,8 @@ async def tempban(ctx, user: discord.Member=None, duration='0s', options='None',
                 uptime = int(time_dic['d']) * 24 * 60 * 60 + int(time_dic['h']) * 3600 + int(time_dic['m']) * 60 + int(time_dic['s'])
             await asyncio.sleep(uptime)
             await user.unban(user)
-        elif ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
-            if str(user.id) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
+        elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
                 await error_code.bypass(ctx, Lang)
             else:
                 embed=discord.Embed(title=str(user)+Lang['user-tempbanned'], description=Lang['warn-reason']+options, color=0x81FA28)
@@ -986,8 +1080,10 @@ async def tempban(ctx, user: discord.Member=None, duration='0s', options='None',
 @bot.command()
 async def unban(ctx, user: discord.User=None):
     if data['commands']['unban']:
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
         await ctx.message.delete()
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'unban '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -999,7 +1095,7 @@ async def unban(ctx, user: discord.User=None):
                     await ctx.channel.send(embed=embed)
                     print(now_time(), str(user), Lang['user-unbanned'])
                 except:
-                    embed = discord.Embed(title='該成員未被封鎖', color=0xEC2E2E)
+                    embed = discord.Embed(title='❌｜'+Lang['user-not-banned'], color=0xEC2E2E)
                     await ctx.channel.send(embed=embed)
         else:
             await error_code.permission(ctx, Lang)
@@ -1007,7 +1103,9 @@ async def unban(ctx, user: discord.User=None):
 @bot.command()
 async def unmute(ctx, user: discord.Member=None):
     if data['commands']['unmute']:
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             if not user:
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'unmute '+Lang['@user'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed, delete_after=5)
@@ -1024,13 +1122,16 @@ async def unmute(ctx, user: discord.Member=None):
 @bot.command()
 async def uinfo(ctx, target: discord.Member=None):
     if data['commands']['uinfo']:
+        ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
         await ctx.message.delete()
-        if ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        if ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             target = target or ctx.author
-            with open('warns.json', 'r') as f:
-                warns = json.load(f)
+            salt(target.id)
+            target_sha1 = hashlib.sha1(user_salt[str(target.id)].encode('utf-8'))
+            target_sha1.update(str(target.id).encode('utf-8'))
             try:
-                amount = warns[str(ctx.guild.id)][str(target.id)]
+                amount = user_data['warns'][str(ctx.guild.id)][str(target_sha1.hexdigest())]
             except:
                 amount = '0'
             embed = discord.Embed(title='🔍｜'+Lang['user-info'], colour=target.colour, timestamp=datetime.utcnow())
@@ -1057,36 +1158,40 @@ async def uinfo(ctx, target: discord.Member=None):
 @bot.command()
 async def warn(ctx, user: discord.Member=None, options='None', *, reason='None'):
     if data['commands']['warn']:
+        salt(user.id)
+        ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+        user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
+        user_sha1.update(str(user.id).encode('utf-8'))
         if not user:
             embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed, delete_after=5)
         elif options == '--sync' and ctx.author.id == data['owner-id']:
-            with open('warns.json', 'r') as f:
+            with open('userdata.json', 'r') as f:
                 warns = json.load(f)
             warns_keys = list(warns.keys())
             warns_values = list(warns.values())
             warns_dict = {}
             warn_values_dict = {}
+            warn_new_dict = {}
             for i in range(len(warns_keys)):
                 warns_dict[warns_keys[i]] = warns_values[i]
-            if not warns.__contains__(str(ctx.guild.id)):
-                warn_values_dict = {str(user.id): str(1)}
-            else:
-                warn_values_dict = warns_values[warns_keys.index(str(ctx.guild.id))]
-                try:
-                    warn_values_dict[str(user.id)] = str(int(warns[str(ctx.guild.id)][str(user.id)]) + 1)
-                except:
-                    warn_values_dict[str(user.id)] = '1'
-            warns_dict[str(ctx.guild.id)] = warn_values_dict
-            with open('warns.json', 'w') as f:
+
+            warn_values_dict = warns_values[warns_keys.index('warns')]
+            warn_new_dict = warn_values_dict[str(ctx.guild.id)]
+            try:
+                warn_new_dict[str(user_sha1.hexdigest())] = str(int(warns['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())]) + 1)
+            except:
+                warn_new_dict[str(user_sha1.hexdigest())] = '1'
+            warns_dict['warns'][str(ctx.guild.id)] = warn_new_dict
+            with open('userdata.json', 'w') as f:
                 json.dump(warns_dict, f, indent = 4)
+            load_admin_bypass()
             embed=discord.Embed(title=str(user)+Lang['user-warned'], description=Lang['warn-reason']+reason, color=0x81FA28)
             await ctx.channel.send(embed=embed)
             await user.send(embed=embed)
             print(now_time(), str(user), Lang['user-warned'], Lang['warn-reason'], reason)
-            with open('warns.json', 'r') as f:
-                warns = json.load(f)
-            if warns[str(ctx.guild.id)][str(user.id)] == data['auto-mute'] :
+            if user_data['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())] == data['auto-mute'] :
                 reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-mute-message']
                 guild = ctx.guild
                 mutedRole = discord.utils.get(guild.roles, name=Lang['mute-role-name'])
@@ -1102,50 +1207,49 @@ async def warn(ctx, user: discord.Member=None, options='None', *, reason='None')
                 await ctx.channel.send(embed=embed)
                 await user.send(embed=embed)
                 print(now_time(), str(user), Lang['user-muted'], Lang['warn-reason'], reason)
-            if warns[str(ctx.guild.id)][str(user.id)] == data['auto-kick']:
+            if user_data['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())] == data['auto-kick']:
                 reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-kick-message']
                 embed=discord.Embed(title=str(user)+Lang['user-kicked'], description=Lang['warn-reason']+reason, color=0x81FA28)
                 await user.send(embed=embed)
                 await ctx.guild.kick(user)
                 await ctx.channel.send(embed=embed)
                 print(now_time(), str(user), Lang['user-kicked'], Lang['warn-reason'], reason)
-            if warns[str(ctx.guild.id)][str(user.id)] == data['auto-ban']:
+            if user_data['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())] == data['auto-ban']:
                 reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-ban-message']
                 embed=discord.Embed(title=str(user)+Lang['user-banned'], description=Lang['warn-reason']+reason, color=0x81FA28)
                 await user.send(embed=embed)
                 await ctx.guild.ban(user, reason=reason)
                 await ctx.channel.send(embed=embed)
                 print(now_time(), str(user), Lang['user-banned'], Lang['warn-reason'], reason)
-        elif ctx.author.guild_permissions.administrator or str(ctx.author.id) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
-            if str(user.id) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
+        elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
                 await error_code.bypass(ctx, Lang)
             else:
-                with open('warns.json', 'r') as f:
+                with open('userdata.json', 'r') as f:
                     warns = json.load(f)
                 warns_keys = list(warns.keys())
                 warns_values = list(warns.values())
                 warns_dict = {}
                 warn_values_dict = {}
+                warn_new_dict = {}
                 for i in range(len(warns_keys)):
                     warns_dict[warns_keys[i]] = warns_values[i]
-                if not warns.__contains__(str(ctx.guild.id)):
-                    warn_values_dict = {str(user.id): str(1)}
-                else:
-                    warn_values_dict = warns_values[warns_keys.index(str(ctx.guild.id))]
-                    try:
-                        warn_values_dict[str(user.id)] = str(int(warns[str(ctx.guild.id)][str(user.id)]) + 1)
-                    except:
-                        warn_values_dict[str(user.id)] = '1'
-                warns_dict[str(ctx.guild.id)] = warn_values_dict
-                with open('warns.json', 'w') as f:
+
+                warn_values_dict = warns_values[warns_keys.index('warns')]
+                warn_new_dict = warn_values_dict[str(ctx.guild.id)]
+                try:
+                    warn_new_dict[str(user_sha1.hexdigest())] = str(int(warns['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())]) + 1)
+                except:
+                    warn_new_dict[str(user_sha1.hexdigest())] = '1'
+                warns_dict['warns'][str(ctx.guild.id)] = warn_new_dict
+                with open('userdata.json', 'w') as f:
                     json.dump(warns_dict, f, indent = 4)
+                load_admin_bypass()
                 embed=discord.Embed(title=str(user)+Lang['user-warned'], description=Lang['warn-reason']+options, color=0x81FA28)
                 await ctx.channel.send(embed=embed)
                 await user.send(embed=embed)
                 print(now_time(), str(user), Lang['user-warned'], Lang['warn-reason'], options)
-                with open('warns.json', 'r') as f:
-                    warns = json.load(f)
-                if warns[str(ctx.guild.id)][str(user.id)] == data['auto-mute'] :
+                if user_data['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())] == data['auto-mute'] :
                     reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-mute-message']
                     guild = ctx.guild
                     mutedRole = discord.utils.get(guild.roles, name=Lang['mute-role-name'])
@@ -1161,14 +1265,14 @@ async def warn(ctx, user: discord.Member=None, options='None', *, reason='None')
                     await ctx.channel.send(embed=embed)
                     await user.send(embed=embed)
                     print(now_time(), str(user), Lang['user-muted'], Lang['warn-reason'], reason)
-                if warns[str(ctx.guild.id)][str(user.id)] == data['auto-kick']:
+                if user_data['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())] == data['auto-kick']:
                     reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-kick-message']
                     embed=discord.Embed(title=str(user)+Lang['user-kicked'], description=Lang['warn-reason']+reason, color=0x81FA28)
                     await user.send(embed=embed)
                     await ctx.guild.kick(user)
                     await ctx.channel.send(embed=embed)
                     print(now_time(), str(user), Lang['user-kicked'], Lang['warn-reason'], reason)
-                if warns[str(ctx.guild.id)][str(user.id)] == data['auto-ban']:
+                if user_data['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())] == data['auto-ban']:
                     reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-ban-message']
                     embed=discord.Embed(title=str(user)+Lang['user-banned'], description=Lang['warn-reason']+reason, color=0x81FA28)
                     await user.send(embed=embed)
@@ -1185,6 +1289,7 @@ async def on_message(message):
         print(message.channel, ':', message.content)
     if message.author == bot.user or message.author.bot:
         return
+    salt(message.author.id)
     if message.channel.id == data['picture-only-channel-id'] and message.content != "":
         await message.channel.purge(limit=1)
     try:
@@ -1194,6 +1299,7 @@ async def on_message(message):
             for i in range(len(userdata_keys)):
                 userdata_dict[userdata_keys[i]] = userdata_values[i]
             userdata_values_dict = userdata_values[userdata_keys.index('admin')]
+            sha512= hashlib.sha512()
             sha512.update(str(message.author).encode('utf-8'))
             userdata_values_dict[str(message.guild.id)] = {str(sha512.hexdigest()): ''}
             userdata_dict['admin'] = userdata_values_dict
@@ -1206,14 +1312,31 @@ async def on_message(message):
             for i in range(len(userdata_keys)):
                 userdata_dict[userdata_keys[i]] = userdata_values[i]
             userdata_values_dict = userdata_values[userdata_keys.index('bypass')]
+            sha512= hashlib.sha512()
             sha512.update(str(message.author).encode('utf-8'))
             userdata_values_dict[str(message.guild.id)] = {str(sha512.hexdigest()): ''}
             userdata_dict['bypass'] = userdata_values_dict
             with open("userdata.json", "w") as userdata_file:
                 json.dump(userdata_dict, userdata_file, indent = 4)
             load_admin_bypass()
+        if str(message.guild.id) not in list(userdata_values[userdata_keys.index('warns')].keys()):
+            userdata_dict = {}
+            userdata_values_dict = {}
+            for i in range(len(userdata_keys)):
+                userdata_dict[userdata_keys[i]] = userdata_values[i]
+            userdata_values_dict = userdata_values[userdata_keys.index('warns')]
+            user_sha1 = hashlib.sha1(user_salt[str(message.author.id)].encode('utf-8'))
+            user_sha1.update(str(message.author.id).encode('utf-8'))
+            userdata_values_dict[str(message.guild.id)] = {str(user_sha1.hexdigest()): '0'}
+            userdata_dict['warns'] = userdata_values_dict
+            with open("userdata.json", "w") as userdata_file:
+                json.dump(userdata_dict, userdata_file, indent = 4)
+            load_admin_bypass()
     except:
         pass
+    if message.content.startswith('!info'):
+        embed = discord.Embed(title='❗｜'+'Copyright Notice', description=copyright(), color=0xB51FFB)
+        await message.channel.send(embed=embed)
     if message.content.startswith('!prefix'):
         embed = discord.Embed(title='💻｜'+Lang['prefix-tip'], description=data['command-prefix'], color=0xB51FFB)
         await message.channel.send(embed=embed)
@@ -1222,7 +1345,6 @@ async def on_message(message):
         embed2 = discord.Embed(title='', color=0xB51FFB)
         with open('config.json', "r", encoding = "utf8") as file:
             tempdata = json.load(file)
-
         data_key = list(tempdata.keys())
         data_values = list(tempdata.values())
         data_command_key = list(tempdata['commands'].keys())
@@ -1257,8 +1379,10 @@ async def on_message(message):
         await message.channel.send(embed=embed)
         await message.channel.send(embed=embed2)
     if data['chat-filter']:
+        user_sha1 = hashlib.sha1(user_salt[str(message.author.id)].encode('utf-8'))
+        user_sha1.update(str(message.author.id).encode('utf-8'))
         try:
-            if  str(message.author.id) in list(userdata_values[userdata_keys.index('bypass')][str(message.guild.id)].values()) or message.author.guild_permissions.administrator:
+            if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(message.guild.id)].values()) or message.author.guild_permissions.administrator:
                 await bot.process_commands(message)
                 return
         except:
@@ -1275,32 +1399,31 @@ async def on_message(message):
                     print(now_time(), message.author.name, '❌｜'+Lang['chat-filter'], match_word.group())
                     reason = Lang['chat-filter-reason']
                     if data['chat-filter-action'] == 'warn':
-                        with open('warns.json', 'r') as f:
+                        with open('userdata.json', 'r') as f:
                             warns = json.load(f)
                         warns_keys = list(warns.keys())
                         warns_values = list(warns.values())
                         warns_dict = {}
                         warn_values_dict = {}
+                        warn_new_dict = {}
                         for i in range(len(warns_keys)):
                             warns_dict[warns_keys[i]] = warns_values[i]
-                        if not warns.__contains__(str(message.guild.id)):
-                            warn_values_dict = {str(message.author.id): str(1)}
-                        else:
-                            warn_values_dict = warns_values[warns_keys.index(str(message.guild.id))]
-                            try:
-                                warn_values_dict[str(message.author.id)] = str(int(warns[str(message.guild.id)][str(message.author.id)]) + 1)
-                            except:
-                                warn_values_dict[str(message.author.id)] = '1'
-                        warns_dict[str(message.guild.id)] = warn_values_dict
-                        with open('warns.json', 'w') as f:
+
+                        warn_values_dict = warns_values[warns_keys.index('warns')]
+                        warn_new_dict = warn_values_dict[str(message.guild.id)]
+                        try:
+                            warn_new_dict[str(user_sha1.hexdigest())] = str(int(warns['warns'][str(message.guild.id)][str(user_sha1.hexdigest())]) + 1)
+                        except:
+                            warn_new_dict[str(user_sha1.hexdigest())] = '1'
+                        warns_dict['warns'][str(message.guild.id)] = warn_new_dict
+                        with open('userdata.json', 'w') as f:
                             json.dump(warns_dict, f, indent = 4)
+                        load_admin_bypass()
                         embed=discord.Embed(title=str(message.author)+Lang['user-warned'], description=Lang['warn-reason']+reason, color=0x81FA28)
                         await message.channel.send(embed=embed)
                         await message.author.send(embed=embed)
                         print(now_time(), str(message.author), Lang['user-warned'], Lang['warn-reason'], reason)
-                        with open('warns.json', 'r') as f:
-                            warns = json.load(f)
-                        if warns[str(message.guild.id)][str(message.author.id)] == data['auto-mute'] :
+                        if user_data['warns'][str(message.guild.id)][str(user_sha1.hexdigest())] == data['auto-mute'] :
                             reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-mute-message']
                             guild = message.guild
                             mutedRole = discord.utils.get(guild.roles, name=Lang['mute-role-name'])
@@ -1316,14 +1439,14 @@ async def on_message(message):
                             await message.channel.send(embed=embed)
                             await message.author.send(embed=embed)
                             print(now_time(), str(message.author), Lang['user-muted'], Lang['warn-reason'], reason)
-                        if warns[str(message.guild.id)][str(message.author.id)] == data['auto-kick']:
+                        if user_data['warns'][str(message.guild.id)][str(user_sha1.hexdigest())] == data['auto-kick']:
                             reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-kick-message']
                             embed=discord.Embed(title=str(message.author)+Lang['user-kicked'], description=Lang['warn-reason']+reason, color=0x81FA28)
                             await message.author.send(embed=embed)
                             await message.guild.kick(message.author)
                             await message.channel.send(embed=embed)
                             print(now_time(), str(message.author), Lang['user-kicked'], Lang['warn-reason'], reason)
-                        if warns[str(message.guild.id)][str(message.author.id)] == data['auto-ban']:
+                        if user_data['warns'][str(message.guild.id)][str(user_sha1.hexdigest())] == data['auto-ban']:
                             reason = Lang['when-warnings-match']+data['auto-mute']+Lang['auto-ban-message']
                             embed=discord.Embed(title=str(message.author)+Lang['user-banned'], description=Lang['warn-reason']+reason, color=0x81FA28)
                             await message.author.send(embed=embed)
