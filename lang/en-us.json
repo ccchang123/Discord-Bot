@@ -21,6 +21,7 @@
     "message-cleared": " messages have been deleted!",
     "user-banned": " has been successfully banned!",
     "user-unbanned": " has been successfully unbanned!",
+    "user-not-banned": "This member has not been banned.",
     "user-kicked": " has been successfully kicked!",
     "user-warned": " has been warned!",
     "warn-reason": " Reason: ",

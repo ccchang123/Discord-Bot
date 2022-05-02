@@ -21,6 +21,7 @@
     "message-cleared": " 则讯息已被删除!",
     "user-banned": " 已被封锁!",
     "user-unbanned": " 已解除封锁!",
+    "user-not-banned": "该成员未被封锁",
     "user-kicked": " 已被踢出伺服器!",
     "user-warned": " 已被警告!",
     "warn-reason": " 原因: ",
