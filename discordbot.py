@@ -64,7 +64,7 @@ with open('chatfilter.txt', "r", encoding = "utf8") as words:
     badwords = words.read().split()
 #
 
-version = 'bc587b6c67d9a909c12bd8142d32c40398a90206a627ba4db9f6c22646f91f7b329082b8414bdb78a216884d494af2258e4e4a3af576b9e16310a89895051e16'
+version = '860baf2fa48b2a727edf6e8546d0cd5cdf881cf6743c81dacdfad565ddb0da628a63ea917f58baa821cebb0049af57b24224c412fee921dd7fa00b3e45ac3aea'
 self_test.check_version(data, version)
 
 def load_admin_bypass():
@@ -122,6 +122,7 @@ tracemalloc.start()
 
 async def main_menu_1(ctx):
     menu_1 = await ctx.send(content=Lang['menu-name'], components=[Select(placeholder=Lang['menu-select'], options= [
+                                                    SelectOption(label=Lang['menu-music'], value=Lang['menu-music'], emoji='🎧'),
                                                     SelectOption(label=prefix+'addadmin', value=prefix+'addadmin', description=Lang['menu-message-addadmin'], emoji='🛠'),
                                                     SelectOption(label=prefix+'addbypass', value=prefix+'addbypass', description=Lang['menu-message-addbypass'], emoji='✅'),
                                                     SelectOption(label=prefix+'ban', value=prefix+'ban', description=Lang['menu-message-ban'], emoji='🚫'),
@@ -145,7 +146,6 @@ async def main_menu_1(ctx):
                                                     SelectOption(label=prefix+'slowmode', value=prefix+'slowmode', description=Lang['menu-message-slowmoe'], emoji='🐢'),
                                                     SelectOption(label=prefix+'send', value=prefix+'send', description=Lang['menu-message-send'], emoji='📨'),
                                                     SelectOption(label=prefix+'time', value=prefix+'time', description=Lang['menu-message-time'], emoji='⏱'),
-                                                    SelectOption(label=prefix+'tlm', value=prefix+'tlm', description=Lang['menu-message-tlm'], emoji='📨'),
                                                     SelectOption(label=Lang['next-page'], value=Lang['next-page'], emoji='➡')
                                                 ],
                                                 custom_id='main_menu_1'
@@ -184,10 +184,6 @@ async def main_menu_1(ctx):
             elif res == prefix+'reload':
                 await interaction.send(Lang['selected']+res)
                 await reload(ctx)
-            elif res == prefix+'tlm':
-                embed = discord.Embed(title=Lang['usage'], description=prefix+'tlm '+Lang['message'], color=0xEC2E2E)
-                embed.add_field(name=Lang['uses'], value=Lang['temp-message'], inline=False)
-                await interaction.send(embed=embed)
             elif res == prefix+'ban':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'ban '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
@@ -230,6 +226,9 @@ async def main_menu_1(ctx):
             elif res == prefix+'send':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'send '+Lang['message'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
+            elif res == Lang['menu-music']:
+                await menu_1.delete()
+                await music_menu(ctx)
             elif res == Lang['next-page']:
                 await menu_1.delete()
                 await main_menu_2(ctx)
@@ -238,6 +237,7 @@ async def main_menu_1(ctx):
 async def main_menu_2(ctx):
     menu_2 = await ctx.send(content=Lang['menu-name'], components=[Select(placeholder=Lang['menu-select'], options= [
                                                     SelectOption(label=Lang['previous-page'], value=Lang['previous-page'], emoji='⬅'),
+                                                    SelectOption(label=prefix+'tlm', value=prefix+'tlm', description=Lang['menu-message-tlm'], emoji='📨'),
                                                     SelectOption(label=prefix+'tempban', value=prefix+'tempban', description=Lang['menu-message-tempban'], emoji='🚫'),
                                                     SelectOption(label=prefix+'tempmute', value=prefix+'tempmute', description=Lang['menu-message-tempmute'], emoji='🔈'),
                                                     SelectOption(label=prefix+'unban', value=prefix+'unban', description=Lang['menu-message-unban'], emoji='⭕'),
@@ -269,11 +269,36 @@ async def main_menu_2(ctx):
             elif res == prefix+'tempban':
                 embed = discord.Embed(title=Lang['usage'], description=prefix+'tempban '+Lang['@user']+Lang['duration']+Lang['reason'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
+            elif res == prefix+'tlm':
+                embed = discord.Embed(title=Lang['usage'], description=prefix+'tlm '+Lang['message'], color=0xEC2E2E)
+                embed.add_field(name=Lang['uses'], value=Lang['temp-message'], inline=False)
+                await interaction.send(embed=embed)
             elif res == Lang['previous-page']:
                 await menu_2.delete()
                 await main_menu_1(ctx)
         except:
             pass
+async def music_menu(ctx):
+    await ctx.send(content=Lang['menu-music-name'], components=[Select(placeholder=Lang['menu-select'], options= [
+                                                    SelectOption(label=prefix+'play', value=prefix+'play', description=Lang['menu-message-play'], emoji='▶'),
+                                                    SelectOption(label=prefix+'leave', value=prefix+'leave', description=Lang['menu-message-leave'], emoji='⏹'),
+                                                    SelectOption(label=prefix+'pause', value=prefix+'pause', description=Lang['menu-message-pause'], emoji='⏸'),
+                                                    SelectOption(label=prefix+'resume', value=prefix+'resume', description=Lang['menu-message-resume'], emoji='⏯'),
+                                                    SelectOption(label=prefix+'repeat', value=prefix+'repeat', description=Lang['menu-message-repeat'], emoji='🔁'),
+                                                    SelectOption(label=prefix+'stop', value=prefix+'stop', description=Lang['menu-message-stop'], emoji='⏹'),
+                                                    SelectOption(label=prefix+'volume', value=prefix+'volume', description=Lang['menu-message-volume'], emoji='🔊'),
+                                                    SelectOption(label=prefix+'skip', value=prefix+'skip', description=Lang['menu-message-skip'], emoji='⏩'),
+                                                    SelectOption(label=prefix+'playlist', value=prefix+'playlist', description=Lang['menu-message-playlist'], emoji='📜'),
+                                                    SelectOption(label=prefix+'listmove', value=prefix+'listmove', description=Lang['menu-message-listmove'], emoji='🔃'),
+                                                    SelectOption(label=prefix+'listremove', value=prefix+'listremove', description=Lang['menu-message-listremove'], emoji='🗑'),
+                                                    SelectOption(label=prefix+'listrandom', value=prefix+'listrandom', description=Lang['menu-message-listrandom'], emoji='🔀'),
+                                                    SelectOption(label=prefix+'favorite add', value=prefix+'favorite add', description=Lang['favorite-menu-add'], emoji='💕'),
+                                                    SelectOption(label=prefix+'favorite remove', value=prefix+'favorite remove', description=Lang['favorite-menu-remove'], emoji='🗑'),
+                                                    SelectOption(label=prefix+'favorite list', value=prefix+'favorite list', description=Lang['favorite-menu-list'], emoji='📜'),
+                                                    SelectOption(label=prefix+'favorite play', value=prefix+'favorite play', description=Lang['favorite-menu-play'], emoji='▶')
+                                                ],
+                                                custom_id='music_menu'
+    )])
 
 @bot.event
 async def on_ready():
@@ -314,11 +339,13 @@ async def on_voice_state_update(member, before, after):
         print(now_time(), member, Lang['when-channel-create'])
 
 @bot.command()
-async def menu(ctx, page: int=1):
-    if page == 1:
+async def menu(ctx, page: str='1'):
+    if page == '1':
         await main_menu_1(ctx)
-    elif page == 2:
+    elif page == '2':
         await main_menu_2(ctx)
+    elif page == 'music':
+        await music_menu(ctx)
 
 @bot.command()
 async def addadmin(ctx, user: discord.Member=None):
@@ -755,27 +782,30 @@ async def ping(ctx, ip: str='', options=''):
 @bot.command()
 async def RESET(ctx):
     if data['command-reset']:
-        if ctx.author.id != data['owner-id']:
-            await ctx.send(Lang['not-owner'], delete_after=3)
-            return
-        if not data['debug-mode']:
-            await ctx.send(Lang['reset-error'], delete_after=3)
-            return
-        if ctx.author.id == data['owner-id']:
-            reset_confirm = await ctx.reply(Lang['RESET-confirm'], components = [[
-                Button(label=Lang['RESET-confirm-button'], style='3', custom_id='confirm'),
-                Button(label=Lang['RESET-cancel-button'], style='4', custom_id='cancel')
-            ]])
-            interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
-            res = interaction.custom_id
-            if res == 'confirm':
-                await reset_confirm.delete()
-                await interaction.send(Lang['RESET-resetted'])
-                reset.reset_config()
-                sys.exit()
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            if ctx.author.id != data['owner-id']:
+                await ctx.send(Lang['not-owner'], delete_after=3)
+                return
+            if not data['debug-mode']:
+                await ctx.send(Lang['reset-error'], delete_after=3)
+                return
             else:
-                await reset_confirm.delete()
-                await interaction.send(Lang['RESET-canceled'])
+                reset_confirm = await ctx.reply(Lang['RESET-confirm'], components = [[
+                    Button(label=Lang['RESET-confirm-button'], style='3', custom_id='confirm'),
+                    Button(label=Lang['RESET-cancel-button'], style='4', custom_id='cancel')
+                ]])
+                interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
+                res = interaction.custom_id
+                if res == 'confirm':
+                    await reset_confirm.delete()
+                    await interaction.send(Lang['RESET-resetted'])
+                    reset.reset_config()
+                    sys.exit()
+                else:
+                    await reset_confirm.delete()
+                    await interaction.send(Lang['RESET-canceled'])
         else:
             await error_code.permission(ctx, Lang)
         
@@ -1336,6 +1366,7 @@ async def on_message(message):
         pass
     if message.content.startswith('!info'):
         embed = discord.Embed(title='❗｜'+'Copyright Notice', description=copyright(), color=0xB51FFB)
+        embed.set_footer(text='Version: '+data['version'])
         await message.channel.send(embed=embed)
     if message.content.startswith('!prefix'):
         embed = discord.Embed(title='💻｜'+Lang['prefix-tip'], description=data['command-prefix'], color=0xB51FFB)
@@ -1649,22 +1680,6 @@ async def play(ctx, *, url: str=''):
             await ctx.reply(embed=embed)
     
 @bot.command()
-async def connect(ctx):
-    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    try:
-        voiceChannel = discord.utils.get(ctx.guild.voice_channels, id=ctx.author.voice.channel.id)
-    except:
-        embed = discord.Embed(title='❌｜'+Lang['music-user-not-in-channel'], color=0xEC2E2E)
-        await ctx.reply(embed=embed)
-        return
-    try:
-        if voice.is_connected():
-            await voice.disconnect()
-    except:
-        pass
-    await voiceChannel.connect()
-
-@bot.command()
 async def leave(ctx):
     if data['music-bot']:
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -1839,6 +1854,8 @@ async def listrandom(ctx):
 async def favorite(ctx, options='', *, values: str=''):
     global button_switch
     if data['music-bot']:
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
         with open('favorite.json', "r", encoding = "utf8") as favorite_file:
             favorite_data = json.load(favorite_file)
         data_keys = list(favorite_data.keys())
@@ -1863,13 +1880,13 @@ async def favorite(ctx, options='', *, values: str=''):
                     info = ydl.extract_info(values, download=False)
                 for i in range(len(data_keys)):
                     favorite_dict[data_keys[i]] = data_values[i]
-                if not favorite_data.__contains__(str(ctx.author.id)):
+                if not favorite_data.__contains__(str(sha1.hexdigest())):
                     data_values_dict = {str(values): str(info['title'])}
                 
                 else:
-                    data_values_dict = data_values[data_keys.index(str(ctx.author.id))]
+                    data_values_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
                     data_values_dict[str(values)] = str(info['title'])
-                favorite_dict[str(ctx.author.id)] = data_values_dict
+                favorite_dict[str(sha1.hexdigest())] = data_values_dict
 
                 with open("favorite.json", "w") as favorite_file:
                     json.dump(favorite_dict, favorite_file, indent = 4)
@@ -1880,7 +1897,7 @@ async def favorite(ctx, options='', *, values: str=''):
                 embed = discord.Embed(title='❌｜'+Lang['favorite-remove-not-number'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
                 return
-            remove_dict = data_values[data_keys.index(str(ctx.author.id))]
+            remove_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
             remove_keys = list(remove_dict.keys())
             remove_values = list(remove_dict.values())
             try:
@@ -1893,11 +1910,11 @@ async def favorite(ctx, options='', *, values: str=''):
             if values == '-a':
                 embed = discord.Embed(title='🗑｜'+Lang['favorite-remove-all'], color=0x81FA28)
                 for remove_url in remove_keys:
-                    del favorite_data[str(ctx.author.id)][str(remove_url)]
+                    del favorite_data[str(sha1.hexdigest())][str(remove_url)]
             else:
                 embed = discord.Embed(title='🗑｜'+Lang['favorite-removed'], description=remove_values[int(values)], color=0x81FA28)
                 remove_url = remove_keys[int(values)]
-                del favorite_data[str(ctx.author.id)][str(remove_url)]
+                del favorite_data[str(sha1.hexdigest())][str(remove_url)]
 
             for i in range(len(data_keys)):
                 favorite_dict[data_keys[i]] = data_values[i]
@@ -1906,7 +1923,7 @@ async def favorite(ctx, options='', *, values: str=''):
             await ctx.channel.send(embed=embed)
         elif options == 'list' or options == 'l':
             try:
-                list_dict = data_values[data_keys.index(str(ctx.author.id))]
+                list_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
             except:
                 embed = discord.Embed(title='❌｜'+Lang['favorite-list-nothing'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
@@ -1924,7 +1941,7 @@ async def favorite(ctx, options='', *, values: str=''):
                 embed = discord.Embed(title='❌｜'+Lang['favorite-play-not-number'], color=0xEC2E2E)
                 await ctx.channel.send(embed=embed)
                 return
-            play_dict = data_values[data_keys.index(str(ctx.author.id))]
+            play_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
             play_keys = list(play_dict.keys())
             try:
                 voiceChannel = discord.utils.get(ctx.guild.voice_channels, id=ctx.author.voice.channel.id)
@@ -2029,6 +2046,8 @@ async def tick_create(ctx, guild, Guild):
 
 @bot.event
 async def on_button_click(interaction):
+    sha1 = hashlib.sha1(user_salt[str(interaction.author.id)].encode('utf-8'))
+    sha1.update(str(interaction.author.id).encode('utf-8'))
     if interaction.component.label.startswith("關閉專案"):
         await interaction.send('專案已關閉')
         await tick_message.set_permissions(interaction.author, send_messages=False, view_channel=False)
@@ -2071,13 +2090,13 @@ async def on_button_click(interaction):
             info = ydl.extract_info(gPlaylist[0], download=False)
         for i in range(len(data_keys)):
             favorite_dict[data_keys[i]] = data_values[i]
-        if not favorite_data.__contains__(str(interaction.author.id)):
+        if not favorite_data.__contains__(str(sha1.hexdigest())):
             data_values_dict = {str(gPlaylist[0]): str(info['title'])}
                 
         else:
-            data_values_dict = data_values[data_keys.index(str(interaction.author.id))]
+            data_values_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
             data_values_dict[str(gPlaylist[0])] = str(info['title'])
-        favorite_dict[str(interaction.author.id)] = data_values_dict
+        favorite_dict[str(sha1.hexdigest())] = data_values_dict
 
         with open("favorite.json", "w") as favorite_file:
             json.dump(favorite_dict, favorite_file, indent = 4)
@@ -2090,12 +2109,12 @@ async def on_button_click(interaction):
         data_values = list(favorite_data.values())
         favorite_dict = {}
         data_values_dict = {}
-        remove_dict = data_values[data_keys.index(str(interaction.author.id))]
+        remove_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
 
         remove_url = gPlaylist[0]
         try:
             embed = discord.Embed(title='🗑｜'+Lang['favorite-removed'], description=remove_dict[remove_url], color=0x81FA28)
-            del favorite_data[str(interaction.author.id)][str(remove_url)]
+            del favorite_data[str(sha1.hexdigest())][str(remove_url)]
         except:
             embed = discord.Embed(title='❌｜'+Lang['favorite-remove-not-favorite'], color=0x81FA28)
         for i in range(len(data_keys)):

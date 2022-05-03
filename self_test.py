@@ -93,7 +93,7 @@ def check_version(data, version):
     res = sha512.hexdigest()
     if res != version:
         if data['debug-mode']:
-            print('version error!','please use new version!', sep='\n')
+            print('version error!','please use new version!\n', sep='\n')
         error()
     else:
         if data['debug-mode']:
