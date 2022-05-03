@@ -1,4 +1,4 @@
-import os, json, hashlib, requests
+import os, json, hashlib
 
 def error():
     error = input('Press Enter to continue')
