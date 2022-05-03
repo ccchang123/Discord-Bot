@@ -64,7 +64,7 @@ with open('chatfilter.txt', "r", encoding = "utf8") as words:
     badwords = words.read().split()
 #
 
-version = '860baf2fa48b2a727edf6e8546d0cd5cdf881cf6743c81dacdfad565ddb0da628a63ea917f58baa821cebb0049af57b24224c412fee921dd7fa00b3e45ac3aea'
+version = '8587f43e11634bb67a60d109a6508f2bcfb34b4e9a1e3a4fb06417bbbea7e2b9f8744c1c2e69be6fcf67f3bff4b71e09eeb0183a1d117f7790d273a17eabd651'
 self_test.check_version(data, version)
 
 def load_admin_bypass():
@@ -316,7 +316,6 @@ async def on_ready():
         await bot.change_presence(status=discord.Status.dnd, activity=game)
     elif data['custom-status'] == 'invisible':
         await bot.change_presence(status=discord.Status.invisible, activity=game)
-    
     await bot.change_presence(status=discord.Status.online, activity=game)
 
 @bot.event
