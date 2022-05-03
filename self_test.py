@@ -90,13 +90,10 @@ def check_file():
 def check_version(data, version):
     sha512= hashlib.sha512()
     sha512.update(data['version'].encode('utf-8'))
-    token = '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'
-    headers = {'Authorization': f'token {token}'}
-    response = requests.get("https://api.github.com/repos/ccchang123/Discord-Bot/releases/latest", headers=headers)
     res = sha512.hexdigest()
-    if res != version or 'v'+data['version'] != response.json()['tag_name']:
+    if res != version:
         if data['debug-mode']:
-            print('version error!','please use new version:', response.json()['tag_name'], sep='\n',end='\n\n')
+            print('version error!','please use new version!', sep='\n',end='\n\n')
         error()
     else:
         if data['debug-mode']:
