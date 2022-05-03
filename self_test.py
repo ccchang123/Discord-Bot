@@ -90,7 +90,7 @@ def check_file():
 def check_version(data, version):
     sha512= hashlib.sha512()
     sha512.update(data['version'].encode('utf-8'))
-    token = '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'
+    token = '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'
     headers = {'Authorization': f'token {token}'}
     response = requests.get("https://api.github.com/repos/ccchang123/Discord-Bot/releases/latest", headers=headers)
     res = sha512.hexdigest()
