@@ -1,4 +1,3 @@
-from calendar import c
 import discord
 from datetime import datetime
 from discord.ext import commands, tasks
