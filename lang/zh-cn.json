@@ -144,6 +144,7 @@
     "music-url-error": "未输入欲播放歌曲网址",
     "music-user-not-in-channel": "请先加入语音频道",
     "music-playing": "正在播放... ",
+    "music-playing-repeat": "正在循环播放... ",
     "music-uploader": "上传者",
     "music-duration": "时长",
     "music-like_count": "按赞数",
@@ -183,7 +184,7 @@
 
     "debug-enabled": "侦错模式: 开启",
     "debug-disabled": "侦错模式: 关闭",
-
+    "version": "当前版本:",
     "@user": " [@使用者]",
     "message": " [讯息]",
     "language": " [语言档名称]",
@@ -192,6 +193,8 @@
     "someone's": " 的",
     "category": " [频道ID]",
     "duration": " [持续时间]",
+    "enable": "开启",
+    "disable": "关闭",
 
     "ping-timeout": "要求等候逾时",
     "with_32_bytes": "(使用 32 位元组的资料)",

@@ -1,5 +1,5 @@
 {
-    "login-name": "Now login name：",
+    "login-name": "Now login name: ",
     "create-channel-name": "'s channel",
     "when-channel-create": " Created a temp voice channel",
     "usage": " Usage:",
@@ -143,7 +143,8 @@
     "music-unfavorite": "Remove from my favorites",
     "music-url-error": "Please type a right url.",
     "music-user-not-in-channel": "Please join a voice channel first.",
-    "music-playing": "Now playing... ",
+    "music-playing": "Now repeat playing... ",
+    "music-playing-repeat": "正在循环播放... ",
     "music-uploader": "Uploader",
     "music-duration": "Duration",
     "music-like_count": "Like count",
@@ -183,7 +184,7 @@
 
     "debug-enabled": "Debug mode: enabled",
     "debug-disabled": "Debug mode: disabled",
-
+    "version": "Now version:",
     "@user": " [@user]",
     "message": " [message]",
     "language": " [language file name]",
@@ -192,6 +193,8 @@
     "someone's": "'s",
     "category": " [channel ID]",
     "duration": " [duration]",
+    "enable": "enabled",
+    "disable": "disabled",
 
     "ping-timeout": "Request timed out.",
     "with_32_bytes": "with 32 bytes of data",
