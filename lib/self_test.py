@@ -12,7 +12,7 @@ def check(data, lang_list):
             break
         else:
             found = False
-    if found == True :
+    if found:
         print('load language setting --- success')
     else:
         print('load language setting --- fail')
@@ -42,7 +42,7 @@ def check(data, lang_list):
         if data['debug-mode']:
             print('load owner-id setting --- success')
 
-    if data['local-channel-id'] == '' or data['create-category-id'] == '' or data['picture-only-channel-id'] == '' or data['ticket-category-id'] == '':
+    if data['enter-private-voice-channel-id'] == '' or data['private-voice-category-id'] == '' or data['picture-only-channel-id'] == '' or data['ticket-category-id'] == '':
         if data['debug-mode']:
            print('load channel-id setting --- fail',end='\n\n')
         error()
@@ -74,18 +74,29 @@ def check_config():
             error()
 
 def check_file():
-    file_list = ['salt.json', 'userdata.json', 'chatfilter.txt', 'favorite.json']
+    if not os.path.isdir('lang/'):
+        print('load lang folder --- fail')
+        error()
+    else:
+        print('load lang folder --- success')
+    if not os.path.isdir('lib/'):
+        print('load lib folder --- fail')
+        error()
+    else:
+        print('load lib folder --- success')
+    if not os.path.isdir('database/'):
+        print('load database folder --- fail',end='\n\n')
+        error()
+    else:
+        print('load database folder --- success',end='\n\n')
+    file_list = ['lib/lang.py', 'lib/reset.py', 'lib/error_code.py', 'database/salt.json', 'database/userdata.json', 'database/musicdata.json', 'database/chatfilter.txt', 'database/favorite.json']
     for file in file_list:
         if not os.path.isfile(file):
             print(f'load {file} file --- fail')
             error()
         else:
             print(f'load {file} file --- success')
-    if not os.path.isdir('lang/'):
-        print('load lang folder --- fail',end='\n\n')
-        error()
-    else:
-        print('load lang folder --- success',end='\n\n')
+    print('')
 
 def check_version(data, version):
     sha512= hashlib.sha512()
@@ -93,8 +104,5 @@ def check_version(data, version):
     res = sha512.hexdigest()
     if res != version:
         if data['debug-mode']:
-            print('version error!','please use new version!', sep='\n',end='\n\n')
+            print('version error!','please use new version!','Now version: '+data['version'], sep='\n',end='\n\n')
         error()
-    else:
-        if data['debug-mode']:
-            print('version:', data['version'])

@@ -1,13 +1,13 @@
 config = {
-    "version": "2.6.5",
+    "version": "2.7.0",
     "language": "",
     "token": "",
     "command-prefix": "",
     "custom-status": "online",
     "custom-activity": "",
     "owner-id": 0,
-    "local-channel-id": 0,
-    "create-category-id": 0,
+    "enter-private-voice-channel-id": 0,
+    "private-voice-category-id": 0,
     "picture-only-channel-id": 0,
     "ticket-category-id": 0,
     "auto-mute": "",
@@ -55,7 +55,6 @@ config = {
     "music-bot": True
 }
 
-
 salt = {
 
 }
@@ -72,14 +71,31 @@ userdata = {
     }
 }
 
+musicdata = {
+    "url": {
+
+    },
+    "title":  {
+
+    },
+    "repeat":  {
+
+    },
+    "button_switch": {
+
+    }
+}
+
 import json
 
 def reset_config():
     with open("config.json", "w") as config_file:
         json.dump(config, config_file, indent = 4)
-    with open("salt.json", "w") as salt_file:
+    with open("database/salt.json", "w") as salt_file:
         json.dump(salt, salt_file, indent = 4)
-    with open("userdata.json", "w") as bypass_file:
-        json.dump(userdata, bypass_file, indent = 4)
-    with open('chatfilter.txt', 'w') as chatfilter_file:
+    with open("database/userdata.json", "w") as user_file:
+        json.dump(userdata, user_file, indent = 4)
+    with open("database/musicdata.json", "w") as music_file:
+        json.dump(musicdata, music_file, indent = 4)
+    with open('database/chatfilter.txt', 'w') as chatfilter_file:
         chatfilter_file.write('')
