@@ -1,3 +1,4 @@
+from calendar import c
 import discord
 from datetime import datetime
 from discord.ext import commands, tasks
@@ -14,7 +15,7 @@ import youtube_dl, mechanize
 from youtubesearchpython import VideosSearch
 import wget, zipfile
 import hashlib
-import error_code, self_test, reset
+from lib import error_code, self_test, reset
 
 if os.path.isfile('RunMeFirst.bat'):
     os.remove('RunMeFirst.bat')
@@ -52,7 +53,7 @@ if not os.path.isfile('config.json'):
     self_test.error()
 else:
     print('load config file --- success')
-    import lang
+    from lib import lang
 
 self_test.check_config()
 self_test.check_file()
@@ -60,16 +61,16 @@ self_test.check_file()
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
 
-with open('chatfilter.txt', "r", encoding = "utf8") as words:
+with open('database/chatfilter.txt', "r", encoding = "utf8") as words:
     badwords = words.read().split()
 #
 
-version = '8587f43e11634bb67a60d109a6508f2bcfb34b4e9a1e3a4fb06417bbbea7e2b9f8744c1c2e69be6fcf67f3bff4b71e09eeb0183a1d117f7790d273a17eabd651'
+version = '17c5ec67312c2f62b4fa014ad42c581514c9fcbdbab0637e9959fa60fa938e334fe1af631af44ecc90d3e96de196bf14edc7369932b153e033fb29ae4426bb45'
 self_test.check_version(data, version)
 
 def load_admin_bypass():
     global user_data, userdata_keys, userdata_values
-    with open('userdata.json', "r", encoding = "utf8") as userdata_file:
+    with open('database/userdata.json', "r", encoding = "utf8") as userdata_file:
         user_data = json.load(userdata_file)
     userdata_keys = list(user_data.keys())
     userdata_values = list(user_data.values())
@@ -88,6 +89,7 @@ self_test.check(data, lang_list)
 
 Lang = lang.lang_chose(data['language'], lang_list, data)
 
+print(Lang['version'], data['version'])
 if data['debug-mode']:
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
     logging.basicConfig(level=logging.NOTSET, filename='BotLog.log', filemode='w', format=FORMAT)
@@ -107,15 +109,15 @@ def now_time():
     date_time = '<'+now.strftime("%Y-%m-%d, %H:%M:%S")+'>'
     return date_time
 
-with open('salt.json', "r", encoding = "utf8") as salt_file:
+with open('database/salt.json', "r", encoding = "utf8") as salt_file:
     user_salt = json.load(salt_file)
 
 def salt(id):
     global user_salt
-    salt = ''.join(random.sample('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+-*/=~`!@#$%^&(){}[]\'<>?\\|,0123456789:;_', 16))
+    salt = ''.join(random.sample('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+-*/=~`!@#$%^&(){}[]\'"<>?\\|,0123456789:;_', 16))
     if not user_salt.__contains__(str(id)):
         user_salt[str(id)] = str(salt)
-    with open("salt.json", "w") as salt_file:
+    with open("database/salt.json", "w") as salt_file:
         json.dump(user_salt, salt_file, indent = 4)
 
 tracemalloc.start()
@@ -322,16 +324,16 @@ async def on_ready():
 async def on_voice_state_update(member, before, after):
     channel = after.channel
     try:
-        if before.channel.members == [] and not before.channel.id == data['local-channel-id']:
-            if before.channel.category_id == int(data['create-category-id']) and before.channel.name == member.name + Lang['create-channel-name']:
+        if before.channel.members == [] and not before.channel.id == data['enter-private-voice-channel-id']:
+            if before.channel.category_id == int(data['private-voice-category-id']) and before.channel.name == member.name + Lang['create-channel-name']:
                 await before.channel.delete()
     except:
         pass
     if channel == None:
         return
-    if channel.id == int(data['local-channel-id']):
+    if channel.id == int(data['enter-private-voice-channel-id']):
         guild = after.channel.guild
-        private_channels = discord.utils.get(guild.categories, id= data['create-category-id'])
+        private_channels = discord.utils.get(guild.categories, id= data['private-voice-category-id'])
         voice_channel = await guild.create_voice_channel(member.name + Lang['create-channel-name'], overwrites=None, category=private_channels, user_limit = 5)
         await member.move_to(voice_channel)
         await voice_channel.set_permissions(member, manage_channels=True, manage_permissions=True)
@@ -367,7 +369,7 @@ async def addadmin(ctx, user: discord.Member=None):
                 userdata_dict = {}
                 userdata_values_dict = {}
                 userdata_new_dict = {}
-                with open('userdata.json', "r", encoding = "utf8") as userdata_file:
+                with open('database/userdata.json', "r", encoding = "utf8") as userdata_file:
                     user_data = json.load(userdata_file)
                 userdata_keys = list(user_data.keys())
                 userdata_values = list(user_data.values())
@@ -377,7 +379,7 @@ async def addadmin(ctx, user: discord.Member=None):
                 userdata_new_dict = userdata_values_dict[str(ctx.guild.id)]
                 userdata_new_dict[str(sha512.hexdigest())] = str(sha1.hexdigest())
                 userdata_dict['admin'][str(ctx.guild.id)] = userdata_new_dict
-                with open("userdata.json", "w") as userdata_file:
+                with open("database/userdata.json", "w") as userdata_file:
                     json.dump(userdata_dict, userdata_file, indent = 4)
                 load_admin_bypass()
                 embed=discord.Embed(title=str(user)+Lang['admin-added'], color=0x81FA28)
@@ -406,7 +408,7 @@ async def addbypass(ctx, user: discord.Member=None):
                 userdata_dict = {}
                 userdata_values_dict = {}
                 userdata_new_dict = {}
-                with open('userdata.json', "r", encoding = "utf8") as userdata_file:
+                with open('database/userdata.json', "r", encoding = "utf8") as userdata_file:
                     user_data = json.load(userdata_file)
                 userdata_keys = list(user_data.keys())
                 userdata_values = list(user_data.values())
@@ -416,7 +418,7 @@ async def addbypass(ctx, user: discord.Member=None):
                 userdata_new_dict = userdata_values_dict[str(ctx.guild.id)]
                 userdata_new_dict[str(sha512.hexdigest())] = str(sha1.hexdigest())
                 userdata_dict['bypass'][str(ctx.guild.id)] = userdata_new_dict
-                with open("userdata.json", "w") as userdata_file:
+                with open("database/userdata.json", "w") as userdata_file:
                     json.dump(userdata_dict, userdata_file, indent = 4)
                 load_admin_bypass()
                 embed=discord.Embed(title=str(user)+Lang['bypass-added'], color=0x81FA28)
@@ -475,17 +477,23 @@ async def clear(ctx, limit=0, member: discord.Member=None):
                 return
             msg = []
             if not member:
-                await ctx.channel.purge(limit=limit)
+                try:
+                    await ctx.channel.purge(limit=limit)
+                except:
+                    pass
                 print(now_time(), str(limit), Lang['message-cleared'])
-                return await ctx.send(str(limit)+Lang['message-cleared'], delete_after=3)
+                embed = discord.Embed(title='🗑｜'+str(limit)+Lang['message-cleared'], color=0x81FA28)
+                await ctx.channel.send(embed=embed, delete_after=3)
+                return
             async for m in ctx.channel.history():
                 if len(msg) == limit:
                     break
                 if m.author == member:
                     msg.append(m)
             await ctx.channel.delete_messages(msg)
-            await ctx.send(str(member.mention)+Lang["someone's"]+' '+str(limit)+Lang['message-cleared'], delete_after=3)
-            print(now_time(), str(member.mention), Lang["someone's"], str(limit), Lang['message-cleared'])
+            embed = discord.Embed(title='🗑｜'+str(member)+Lang["someone's"]+' '+str(limit)+Lang['message-cleared'], color=0x81FA28)
+            await ctx.channel.send(embed=embed, delete_after=3)
+            print(now_time(), str(member), Lang["someone's"], str(limit), Lang['message-cleared'])
         else:
             await error_code.permission(ctx, Lang)
 
@@ -503,12 +511,13 @@ async def chlang(ctx, language=''):
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
                 checked = await lang.chlang_check(ctx, language, Lang, data)
-                if checked == False:
+                if not checked:
                     return
                 chlang = 'lang/'+language+'.json'
                 with open(chlang, "r", encoding = "utf8") as lang_file:
                     Lang = json.load(lang_file)
-                await ctx.channel.send(Lang['lang-changed'])
+                embed = discord.Embed(title='🇺🇳｜'+Lang['lang-changed'], color=0x81FA28)
+                await ctx.channel.send(embed=embed)
                 print(now_time(), Lang['lang-changed'], language)
         else:
             await error_code.permission(ctx, Lang)
@@ -564,7 +573,7 @@ async def clearwarn(ctx, member: discord.Member=None, options=''):
                     await ctx.channel.send(Lang['user-nowarn'])
                     return
                 else:
-                    with open('userdata.json', 'w') as f:
+                    with open('database/userdata.json', 'w') as f:
                         json.dump(user_data, f, indent = 4)
                     clearwarn_dict = {}
                     clearwarn_values_dict = {}
@@ -576,7 +585,7 @@ async def clearwarn(ctx, member: discord.Member=None, options=''):
                         clearwarn_new_dict = clearwarn_values_dict[str(ctx.guild.id)]
                         clearwarn_new_dict[str(member_sha1.hexdigest())] = str(int(user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())]) - 1)
                         clearwarn_dict['warns'][str(ctx.guild.id)] = clearwarn_new_dict
-                        with open('userdata.json', 'w') as f:
+                        with open('database/userdata.json', 'w') as f:
                             json.dump(clearwarn_dict, f, indent = 4)
                         load_admin_bypass()
                         embed = discord.Embed(title=member.name+Lang['warn-amount']+user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())], color=0xEC2E2E)
@@ -584,7 +593,7 @@ async def clearwarn(ctx, member: discord.Member=None, options=''):
                         print(now_time(), str(member), Lang['warn-amount'], user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())])
                     elif options == '-a':
                         user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())] = '0'
-                        with open('userdata.json', 'w') as f:
+                        with open('database/userdata.json', 'w') as f:
                             json.dump(user_data, f, indent = 4)
                         load_admin_bypass()
                         embed = discord.Embed(title=member.name+Lang['warn-cleared-all'], color=0xEC2E2E)
@@ -821,7 +830,7 @@ async def reload(ctx):
             data = json.load(open('config.json'))
             prefix = data['command-prefix']
             Lang = lang.lang_chose(data['language'], lang_list, data)
-            with open('chatfilter.txt', "r", encoding = "utf8") as words:
+            with open('database/chatfilter.txt', "r", encoding = "utf8") as words:
                 badwords = words.read().split()
             if data['custom-activity'] != '':
                 game = discord.Game(data['custom-activity'])
@@ -829,7 +838,8 @@ async def reload(ctx):
                 game = discord.Game(now_time())
             await bot.change_presence(status=discord.Status.online, activity=game)
             try:
-                await ctx.channel.send(Lang['reloaded'])
+                embed = discord.Embed(title='🔄｜'+Lang['reloaded'], color=0x81FA28)
+                await ctx.channel.send(embed=embed)
                 print(now_time(), Lang['reloaded'])
             except:
                 print(now_time(), 'Could not pass language setting, end the bot!')
@@ -848,7 +858,7 @@ async def removeadmin(ctx, user: discord.Member=None):
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
                 userdata_dict = {}
-                with open('userdata.json', "r", encoding = "utf8") as userdata_file:
+                with open('database/userdata.json', "r", encoding = "utf8") as userdata_file:
                     user_data = json.load(userdata_file)
                 userdata_keys = list(user_data.keys())
                 userdata_values = list(user_data.values())
@@ -858,7 +868,7 @@ async def removeadmin(ctx, user: discord.Member=None):
                     del user_data['admin'][str(ctx.guild.id)][str(sha512.hexdigest())]
                     for i in range(len(userdata_keys)):
                         userdata_dict[userdata_keys[i]] = userdata_values[i]
-                    with open("userdata.json", "w") as userdata_file:
+                    with open("database/userdata.json", "w") as userdata_file:
                         json.dump(userdata_dict, userdata_file, indent = 4)
                     load_admin_bypass()
                     embed=discord.Embed(title=str(user)+Lang['admin-removed'], color=0x81FA28)
@@ -881,7 +891,7 @@ async def removebypass(ctx, user: discord.Member=None):
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
                 userdata_dict = {}
-                with open('userdata.json', "r", encoding = "utf8") as userdata_file:
+                with open('database/userdata.json', "r", encoding = "utf8") as userdata_file:
                     user_data = json.load(userdata_file)
                 userdata_keys = list(user_data.keys())
                 userdata_values = list(user_data.values())
@@ -891,7 +901,7 @@ async def removebypass(ctx, user: discord.Member=None):
                     del user_data['bypass'][str(ctx.guild.id)][str(sha512.hexdigest())]
                     for i in range(len(userdata_keys)):
                         userdata_dict[userdata_keys[i]] = userdata_values[i]
-                    with open("userdata.json", "w") as userdata_file:
+                    with open("database/userdata.json", "w") as userdata_file:
                         json.dump(userdata_dict, userdata_file, indent = 4)
                     load_admin_bypass()
                     embed=discord.Embed(title=str(user)+Lang['bypass-removed'], color=0x81FA28)
@@ -1196,7 +1206,7 @@ async def warn(ctx, user: discord.Member=None, options='None', *, reason='None')
             embed = discord.Embed(title=Lang['usage'], description=prefix+'warn '+Lang['@user']+Lang['reason'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed, delete_after=5)
         elif options == '--sync' and ctx.author.id == data['owner-id']:
-            with open('userdata.json', 'r') as f:
+            with open('database/userdata.json', 'r') as f:
                 warns = json.load(f)
             warns_keys = list(warns.keys())
             warns_values = list(warns.values())
@@ -1213,7 +1223,7 @@ async def warn(ctx, user: discord.Member=None, options='None', *, reason='None')
             except:
                 warn_new_dict[str(user_sha1.hexdigest())] = '1'
             warns_dict['warns'][str(ctx.guild.id)] = warn_new_dict
-            with open('userdata.json', 'w') as f:
+            with open('database/userdata.json', 'w') as f:
                 json.dump(warns_dict, f, indent = 4)
             load_admin_bypass()
             embed=discord.Embed(title=str(user)+Lang['user-warned'], description=Lang['warn-reason']+reason, color=0x81FA28)
@@ -1254,7 +1264,7 @@ async def warn(ctx, user: discord.Member=None, options='None', *, reason='None')
             if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
                 await error_code.bypass(ctx, Lang)
             else:
-                with open('userdata.json', 'r') as f:
+                with open('database/userdata.json', 'r') as f:
                     warns = json.load(f)
                 warns_keys = list(warns.keys())
                 warns_values = list(warns.values())
@@ -1271,7 +1281,7 @@ async def warn(ctx, user: discord.Member=None, options='None', *, reason='None')
                 except:
                     warn_new_dict[str(user_sha1.hexdigest())] = '1'
                 warns_dict['warns'][str(ctx.guild.id)] = warn_new_dict
-                with open('userdata.json', 'w') as f:
+                with open('database/userdata.json', 'w') as f:
                     json.dump(warns_dict, f, indent = 4)
                 load_admin_bypass()
                 embed=discord.Embed(title=str(user)+Lang['user-warned'], description=Lang['warn-reason']+options, color=0x81FA28)
@@ -1332,7 +1342,7 @@ async def on_message(message):
             sha512.update(str(message.author).encode('utf-8'))
             userdata_values_dict[str(message.guild.id)] = {str(sha512.hexdigest()): ''}
             userdata_dict['admin'] = userdata_values_dict
-            with open("userdata.json", "w") as userdata_file:
+            with open("database/userdata.json", "w") as userdata_file:
                 json.dump(userdata_dict, userdata_file, indent = 4)
             load_admin_bypass()
         if str(message.guild.id) not in list(userdata_values[userdata_keys.index('bypass')].keys()):
@@ -1345,7 +1355,7 @@ async def on_message(message):
             sha512.update(str(message.author).encode('utf-8'))
             userdata_values_dict[str(message.guild.id)] = {str(sha512.hexdigest()): ''}
             userdata_dict['bypass'] = userdata_values_dict
-            with open("userdata.json", "w") as userdata_file:
+            with open("database/userdata.json", "w") as userdata_file:
                 json.dump(userdata_dict, userdata_file, indent = 4)
             load_admin_bypass()
         if str(message.guild.id) not in list(userdata_values[userdata_keys.index('warns')].keys()):
@@ -1358,9 +1368,53 @@ async def on_message(message):
             user_sha1.update(str(message.author.id).encode('utf-8'))
             userdata_values_dict[str(message.guild.id)] = {str(user_sha1.hexdigest()): '0'}
             userdata_dict['warns'] = userdata_values_dict
-            with open("userdata.json", "w") as userdata_file:
+            with open("database/userdata.json", "w") as userdata_file:
                 json.dump(userdata_dict, userdata_file, indent = 4)
             load_admin_bypass()
+        if str(message.guild.id) not in list(musicdata_values[musicdata_keys.index('url')].keys()):
+            musicdata_dict = {}
+            musicdata_values_dict = {}
+            for i in range(len(musicdata_keys)):
+                musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+            musicdata_values_dict = musicdata_values[musicdata_keys.index('url')]
+            musicdata_values_dict[str(message.guild.id)] = {}
+            musicdata_dict['url'] = musicdata_values_dict
+            with open("database/musicdata.json", "w") as userdata_file:
+                json.dump(musicdata_dict, userdata_file, indent = 4)
+            load_music()
+        if str(message.guild.id) not in list(musicdata_values[musicdata_keys.index('title')].keys()):
+            musicdata_dict = {}
+            musicdata_values_dict = {}
+            for i in range(len(musicdata_keys)):
+                musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+            musicdata_values_dict = musicdata_values[musicdata_keys.index('title')]
+            musicdata_values_dict[str(message.guild.id)] = {}
+            musicdata_dict['title'] = musicdata_values_dict
+            with open("database/musicdata.json", "w") as userdata_file:
+                json.dump(musicdata_dict, userdata_file, indent = 4)
+            load_music()
+        if str(message.guild.id) not in list(musicdata_values[musicdata_keys.index('repeat')].keys()):
+            musicdata_dict = {}
+            musicdata_values_dict = {}
+            for i in range(len(musicdata_keys)):
+                musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+            musicdata_values_dict = musicdata_values[musicdata_keys.index('repeat')]
+            musicdata_values_dict[str(message.guild.id)] = False
+            musicdata_dict['repeat'] = musicdata_values_dict
+            with open("database/musicdata.json", "w") as userdata_file:
+                json.dump(musicdata_dict, userdata_file, indent = 4)
+            load_music()
+        if str(message.guild.id) not in list(musicdata_values[musicdata_keys.index('button_switch')].keys()):
+            musicdata_dict = {}
+            musicdata_values_dict = {}
+            for i in range(len(musicdata_keys)):
+                musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+            musicdata_values_dict = musicdata_values[musicdata_keys.index('button_switch')]
+            musicdata_values_dict[str(message.guild.id)] = False
+            musicdata_dict['button_switch'] = musicdata_values_dict
+            with open("database/musicdata.json", "w") as userdata_file:
+                json.dump(musicdata_dict, userdata_file, indent = 4)
+            load_music()
     except:
         pass
     if message.content.startswith('!info'):
@@ -1429,7 +1483,7 @@ async def on_message(message):
                     print(now_time(), message.author.name, '❌｜'+Lang['chat-filter'], match_word.group())
                     reason = Lang['chat-filter-reason']
                     if data['chat-filter-action'] == 'warn':
-                        with open('userdata.json', 'r') as f:
+                        with open('database/userdata.json', 'r') as f:
                             warns = json.load(f)
                         warns_keys = list(warns.keys())
                         warns_values = list(warns.values())
@@ -1446,7 +1500,7 @@ async def on_message(message):
                         except:
                             warn_new_dict[str(user_sha1.hexdigest())] = '1'
                         warns_dict['warns'][str(message.guild.id)] = warn_new_dict
-                        with open('userdata.json', 'w') as f:
+                        with open('database/userdata.json', 'w') as f:
                             json.dump(warns_dict, f, indent = 4)
                         load_admin_bypass()
                         embed=discord.Embed(title=str(message.author)+Lang['user-warned'], description=Lang['warn-reason']+reason, color=0x81FA28)
@@ -1524,11 +1578,42 @@ async def on_message(message):
 
 # Music bot
 
-global player_repeat
-gPlaylist = []
-music_name = []
-player_repeat = False
-button_switch = False
+def load_music():
+    global music_data, musicdata_keys, musicdata_values
+    with open('database/musicdata.json', "r", encoding = "utf8") as music_file:
+        music_data = json.load(music_file)
+    musicdata_keys = list(music_data.keys())
+    musicdata_values = list(music_data.values())
+load_music()
+
+def clear_music():
+    musicdata_dict = {}
+    for i in range(len(musicdata_keys)):
+        musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+    for i in list(music_data['url'].keys()):
+        music_data['url'][i] = {}
+        music_data['title'][i] = {}
+    for k in list(music_data['button_switch'].keys()):
+        music_data['button_switch'][k] = False
+    with open("database/musicdata.json", "w") as musicdata_file:
+        json.dump(music_data, musicdata_file, indent = 4)
+    load_music()
+clear_music()
+
+def button_switch(ctx, TF='false'):
+    musicdata_dict = {}
+    for i in range(len(musicdata_keys)):
+        musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+    musicdata_values_dict = musicdata_values[musicdata_keys.index('button_switch')]
+    if TF == 'true':
+        musicdata_values_dict[str(ctx.guild.id)] = True
+    else:
+        musicdata_values_dict[str(ctx.guild.id)] = False
+    musicdata_dict['button_switch'] = musicdata_values_dict
+    with open("database/musicdata.json", "w") as musicdata_file:
+        json.dump(musicdata_dict, musicdata_file, indent = 4)
+    load_music()
+
 ydl_opts = {
         'format': 'bestaudio',
         'noplaylist': False,
@@ -1536,48 +1621,42 @@ ydl_opts = {
     }
 
 async def playit(ctx):
-    global gPlaylist
-    global player_repeat, music_name, button_switch
+    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     try:
-        if not player_repeat:
-            await music_button.delete()
-            gPlaylist.pop(0)
-            music_name.pop(0)
-            if gPlaylist == []:
-                voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        if not music_data['repeat'][str(ctx.guild.id)]:
+            await ctx.channel.purge(limit=1, check = lambda inter: inter.content == '')
+            musicdata_dict = {}
+            del music_data['url'][str(ctx.guild.id)][str(list(music_data['url'][str(ctx.guild.id)].keys())[0])]
+            del music_data['title'][str(ctx.guild.id)][str(list(music_data['title'][str(ctx.guild.id)].keys())[0])]
+            for i in range(len(musicdata_keys)):
+                musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+            with open("database/musicdata.json", "w") as musicdata_file:
+                json.dump(musicdata_dict, musicdata_file, indent = 4)
+            load_music()
+            if list(music_data['url'][str(ctx.guild.id)].keys()) == []:
                 await asyncio.sleep(2)
                 await voice.disconnect()
-        sourcex = gPlaylist[0]
-        br = mechanize.Browser()
-        try:
-            br.open(sourcex)
-        except:
-            pass
         try:
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(gPlaylist[0], download=False)
-                if 'entries' in info:
-                    Url = info['entries'][0]["formats"][0]['url']
-                elif 'formats' in info:
-                    Url = info["formats"][0]['url']
+                info = ydl.extract_info(list(music_data['url'][str(ctx.guild.id)].values())[0], download=False)
+            Url = info["formats"][0]['url']
         except:
-            Url = gPlaylist[0]
+            Url = list(music_data['url'][str(ctx.guild.id)].values())[0]
         pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
-        bot.voice_clients[0].play(pplayer, after = lambda e: myafter(ctx))
-        button_switch = True
-        if not player_repeat:
+        voice.play(pplayer, after = lambda e: myafter(ctx))
+        button_switch(ctx, 'true')
+        print('',Lang['music-playing'],list(music_data['title'][str(ctx.guild.id)].values())[0],list(music_data['url'][str(ctx.guild.id)].values())[0],'', sep='\n')
+        if not music_data['repeat'][str(ctx.guild.id)]:
             await music_button_1(ctx, info)
     except:
         pass
         
 def myafter(ctx):
-    global button_switch
-    button_switch = False
+    button_switch(ctx)
     fut = asyncio.run_coroutine_threadsafe(playit(ctx), bot.loop)
     fut.result()
 
 async def music_button_1(ctx, info):
-    global music_button
     if 'entries' in info:
         Info = info['entries'][0]
     elif 'formats' in info:
@@ -1594,9 +1673,13 @@ async def music_button_1(ctx, info):
     embed.add_field(name=Lang['music-like_count'], value=str(Info.get('like_count')), inline=True)
     embed.add_field(name=Lang['music-DJ'], value=f'<@{ctx.message.author.id}>', inline=True)
     embed.add_field(name=Lang['music-channel'], value=f'<#{ctx.author.voice.channel.id}>', inline=True)
+    if music_data['repeat'][str(ctx.guild.id)]:
+        embed.add_field(name=Lang['music-repeat'], value=Lang['enable'], inline=True)
+    else:
+        embed.add_field(name=Lang['music-repeat'], value=Lang['disable'], inline=True)
     embed.set_footer(text=now_time(), icon_url=ctx.author.avatar_url)
     await ctx.channel.send(embed=embed)
-    music_button = await ctx.send('', components = [[
+    await ctx.send('', components = [[
         Button(label=Lang['music-link'], style=ButtonStyle.URL, url=Info.get('webpage_url')),
         Button(label=Lang['music-list'], style='2', custom_id='list', emoji='📜'),
         Button(label=Lang['music-repeat'], style='2', custom_id='repeat', emoji='🔁'),
@@ -1611,7 +1694,6 @@ async def music_button_1(ctx, info):
 
 @bot.command(aliases=['p'])
 async def play(ctx, *, url: str=''):
-    global music_name, button_switch
     if data['music-bot']:
         if url == '':
             embed = discord.Embed(title='❌｜'+Lang['music-url-error'], color=0xEC2E2E)
@@ -1658,21 +1740,39 @@ async def play(ctx, *, url: str=''):
         except:
             pass
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        gPlaylist.append(url)
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+        Url = info["formats"][0]['url']
+        musicdata_dict = {}
+        musicdata_values_dict = {}
+        musicdata_new_dict = {}
+        for i in range(len(musicdata_keys)):
+            musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+        musicdata_values_dict = musicdata_values[musicdata_keys.index('url')]
+        musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
+        try:
+            musicdata_new_dict[str(int(list(music_data['url'][str(ctx.guild.id)].keys()).max())+1)] = str(url)
+        except:
+            musicdata_new_dict[str(len(musicdata_new_dict))] = str(url)
+        musicdata_dict['url'][str(ctx.guild.id)] = musicdata_new_dict
+        with open("database/musicdata.json", "w") as musicdata_file:
+            json.dump(musicdata_dict, musicdata_file, indent = 4)
+        musicdata_values_dict = musicdata_values[musicdata_keys.index('title')]
+        musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
+        try:
+            musicdata_new_dict[str(int(list(music_data['title'][str(ctx.guild.id)].keys()).max())+1)] = str(info['title'])
+        except:
+            musicdata_new_dict[str(len(musicdata_new_dict))] = str(info['title'])
+        musicdata_dict['title'][str(ctx.guild.id)] = musicdata_new_dict
+        with open("database/musicdata.json", "w") as musicdata_file:
+            json.dump(musicdata_dict, musicdata_file, indent = 4)
+        load_music()
         await ctx.message.add_reaction('✅')
         try:
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-            if 'entries' in info:
-                Url = info['entries'][0]["formats"][0]['url']
-                music_name.append(info['entries'][0]['title'])
-            elif 'formats' in info:
-                Url = info["formats"][0]['url']
-                music_name.append(info['title'])
-            
             pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
             voice.play(pplayer, after = lambda e: myafter(ctx))
-            button_switch = True
+            button_switch(ctx, 'true')
+            print('',Lang['music-playing'],list(music_data['title'][str(ctx.guild.id)].values())[0],list(music_data['url'][str(ctx.guild.id)].values())[0],'', sep='\n')
             await music_button_1(ctx, info)
         except:
             embed = discord.Embed(title='✅｜'+Lang['playlist_added'], color=0x81FA28)
@@ -1714,27 +1814,40 @@ async def resume(ctx):
 @bot.command()
 async def repeat(ctx):
     if data['music-bot']:
-        global player_repeat
-        if player_repeat:
-            player_repeat = False
+        musicdata_dict = {}
+        for i in range(len(musicdata_keys)):
+            musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+        musicdata_values_dict = musicdata_values[musicdata_keys.index('repeat')]
+        if music_data['repeat'][str(ctx.guild.id)]:
+            musicdata_values_dict[str(ctx.guild.id)] = False
             embed = discord.Embed(title='🔁｜'+Lang['repeat-disabled'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed)
-            return
         else:
-            player_repeat = True
+            musicdata_values_dict[str(ctx.guild.id)] = True
             embed = discord.Embed(title='🔁｜'+Lang['repeat-enabled'], color=0x81FA28)
             await ctx.channel.send(embed=embed)
-            return
+        musicdata_dict['repeat'] = musicdata_values_dict
+        with open("database/musicdata.json", "w") as musicdata_file:
+            json.dump(musicdata_dict, musicdata_file, indent = 4)
+        load_music()
 
 @bot.command()
 async def stop(ctx):
-    global player_repeat, gPlaylist, music_name, button_switch
     if data['music-bot']:
-        gPlaylist.clear()
-        music_name.clear()
+        musicdata_dict = {}
+        musicdata_values_dict = {}
+        for i in range(len(musicdata_keys)):
+            musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+        musicdata_values_dict = musicdata_values[musicdata_keys.index('repeat')]
+        musicdata_values_dict[str(ctx.guild.id)] = False
+        music_data['url'][str(ctx.guild.id)] = {}
+        music_data['title'][str(ctx.guild.id)] = {}
+        music_data['repeat'] = musicdata_values_dict
+        with open("database/musicdata.json", "w") as musicdata_file:
+            json.dump(music_data, musicdata_file, indent = 4)
+        load_music()
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        player_repeat = False
-        button_switch = False
+        button_switch(ctx)
         try:
             voice.stop()
             await voice.disconnect()
@@ -1763,10 +1876,8 @@ async def volume(ctx, volume: int=100):
 
 @bot.command()
 async def skip(ctx):
-    global player_repeat, button_switch
     if data['music-bot']:
-        player_repeat = False
-        button_switch = False
+        button_switch(ctx)
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         try:
             voice.stop()
@@ -1776,19 +1887,21 @@ async def skip(ctx):
 
 @bot.command(aliases=['pl'])
 async def playlist(ctx):
-    global music_name
     if data['music-bot']:
-        if music_name == []:
+        if list(music_data['title'][str(ctx.guild.id)].keys()) == []:
             embed = discord.Embed(title='❌｜'+Lang['music-nothing-playing'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed)
             return
         else:
             embed = discord.Embed(title='📜｜'+Lang['music-list'], color=0x79EF2F)
-            for playlist in range(len(music_name)):
+            for playlist in range(len(list(music_data['title'][str(ctx.guild.id)].keys()))):
                 if playlist == 0:
-                    embed.add_field(name=music_name[playlist], value=Lang['music-playing'], inline=False)
+                    if not music_data['repeat'][str(ctx.guild.id)]:
+                        embed.add_field(name=list(music_data['title'][str(ctx.guild.id)].values())[playlist], value=Lang['music-playing'], inline=False)
+                    else:
+                        embed.add_field(name=list(music_data['title'][str(ctx.guild.id)].values())[playlist], value=Lang['music-playing-repeat'], inline=False)
                 else:
-                    embed.add_field(name=music_name[playlist], value='No. '+str(playlist), inline=False)
+                    embed.add_field(name=list(music_data['title'][str(ctx.guild.id)].values())[playlist], value='No. '+str(playlist), inline=False)
         await ctx.channel.send(embed=embed)
 
 @bot.command()
@@ -1799,63 +1912,101 @@ async def listmove(ctx, before: int, after: int):
             embed = discord.Embed(title='❌｜'+Lang['move-error'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed)
             return
-        elif before > len(gPlaylist)-1 or after > len(gPlaylist)-1:
+        elif before > len(list(music_data['url'][str(ctx.guild.id)].keys()))-1 or after > len(list(music_data['url'][str(ctx.guild.id)].keys()))-1:
             embed = discord.Embed(title='❌｜'+Lang['out-range'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed)
             return
-        music_url = gPlaylist[before]
-        music = music_name[before]
-        del gPlaylist[before]
-        gPlaylist.insert(after, music_url)
-        del music_name[before]
-        music_name.insert(after, music)
+        musicdata_dict = {}
+        move_url_dict = {}
+        move_title_dict = {}
+        url_list = list(music_data['url'][str(ctx.guild.id)].items())
+        title_list = list(music_data['title'][str(ctx.guild.id)].items())
+        music_url = url_list[before]
+        music_name = title_list[before]
+        del url_list[before]
+        url_list.insert(after, music_url)
+        del title_list[before]
+        title_list.insert(after, music_name)
+        for i in range(len(url_list)):
+            move_url_dict[url_list[i][0]] = url_list[i][1]
+            move_title_dict[title_list[i][0]] = title_list[i][1]
+        for j in range(len(musicdata_keys)):
+            musicdata_dict[musicdata_keys[j]] = musicdata_values[j]
+        musicdata_dict['url'][str(ctx.guild.id)] = move_url_dict
+        musicdata_dict['title'][str(ctx.guild.id)] = move_title_dict
+        with open("database/musicdata.json", "w") as musicdata_file:
+            json.dump(musicdata_dict, musicdata_file, indent = 4)
+        load_music()
         embed = discord.Embed(title='🔃｜'+Lang['music-moved'], color=0x81FA28)
         await ctx.channel.send(embed=embed)
 
 @bot.command()
 async def listremove(ctx, number:int):
-    global gPlaylist, music_name
     if data['music-bot']:
         if number == 0:
             embed = discord.Embed(title='❌｜'+Lang['delete-error'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed)
             return
-        elif number > len(gPlaylist)-1 or number > len(gPlaylist)-1:
+        elif number > len(list(music_data['url'][str(ctx.guild.id)].keys()))-1:
             embed = discord.Embed(title='❌｜'+Lang['out-range'], color=0xEC2E2E)
             await ctx.channel.send(embed=embed)
             return
-        del gPlaylist[number]
-        del music_name[number]
+        musicdata_dict = {}
+        musicdata_values_dict = {}
+        musicdata_new_dict = {}
+        num_list = list(music_data['url'][str(ctx.guild.id)].keys())
+        for i in range(len(musicdata_keys)):
+            musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
+        musicdata_values_dict = musicdata_values[musicdata_keys.index('url')]
+        musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
+        del musicdata_new_dict[num_list[number]]
+        musicdata_dict['url'][str(ctx.guild.id)] = musicdata_new_dict
+        musicdata_values_dict = musicdata_values[musicdata_keys.index('title')]
+        musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
+        del musicdata_new_dict[num_list[number]]
+        musicdata_dict['title'][str(ctx.guild.id)] = musicdata_new_dict
+        with open("database/musicdata.json", "w") as musicdata_file:
+            json.dump(musicdata_dict, musicdata_file, indent = 4)
+        load_music()
         embed = discord.Embed(title='🗑｜'+Lang['music-deleted'], color=0x81FA28)
         await ctx.channel.send(embed=embed)
 
 @bot.command()
 async def listrandom(ctx):
-    global music_name, gPlaylist
     if data['music-bot']:
-        random_first = []
-        random_dict = {}
-        random_first.append(music_name[0])
-        for i in range(len(music_name)):
-            random_dict[music_name[i]] = gPlaylist[i]
-        music_name.pop(0)
-        gPlaylist.pop(0)
-        random.shuffle(music_name)
-        for j in music_name:
-            gPlaylist.pop(0)
-            gPlaylist.append(random_dict[j])
-        music_name.insert(0, random_first[0])
-        gPlaylist.insert(0, random_dict[random_first[0]])
-        embed = discord.Embed(title='🔀｜'+Lang['music-randomed'], color=0x81FA28)
+        musicdata_dict = {}
+        random_dict = {} 
+        url_list = list(music_data['url'][str(ctx.guild.id)].items())
+        if url_list == []:
+            embed = discord.Embed(title='❌｜'+Lang['music-nothing-playing'], color=0xEC2E2E)
+        else:
+            temp = url_list[0]
+            url_list.pop(0)
+            random.shuffle(url_list)
+            url_list.insert(0, temp)
+            for i in range(len(url_list)):
+                random_dict[url_list[i][0]] = url_list[i][1]
+            for j in range(len(musicdata_keys)):
+                musicdata_dict[musicdata_keys[j]] = musicdata_values[j]
+            musicdata_dict['url'][str(ctx.guild.id)] = random_dict
+            with open("database/musicdata.json", "w") as musicdata_file:
+                json.dump(musicdata_dict, musicdata_file, indent = 4)
+            random_dict = {}
+            for i in range(len(url_list)):
+                random_dict[url_list[i][0]] = music_data['title'][str(ctx.guild.id)][url_list[i][0]]
+            musicdata_dict['title'][str(ctx.guild.id)] = random_dict
+            with open("database/musicdata.json", "w") as musicdata_file:
+                json.dump(musicdata_dict, musicdata_file, indent = 4)
+            load_music()
+            embed = discord.Embed(title='🔀｜'+Lang['music-randomed'], color=0x81FA28)
         await ctx.channel.send(embed=embed)
 
 @bot.command(aliases=['f'])
 async def favorite(ctx, options='', *, values: str=''):
-    global button_switch
     if data['music-bot']:
         sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
         sha1.update(str(ctx.author.id).encode('utf-8'))
-        with open('favorite.json', "r", encoding = "utf8") as favorite_file:
+        with open('database/favorite.json', "r", encoding = "utf8") as favorite_file:
             favorite_data = json.load(favorite_file)
         data_keys = list(favorite_data.keys())
         data_values = list(favorite_data.values())
@@ -1887,7 +2038,7 @@ async def favorite(ctx, options='', *, values: str=''):
                     data_values_dict[str(values)] = str(info['title'])
                 favorite_dict[str(sha1.hexdigest())] = data_values_dict
 
-                with open("favorite.json", "w") as favorite_file:
+                with open("database/favorite.json", "w") as favorite_file:
                     json.dump(favorite_dict, favorite_file, indent = 4)
                 embed = discord.Embed(title='✅｜'+Lang['favorite-added'], description=info['title'], color=0x81FA28)
                 await ctx.reply(embed=embed)
@@ -1917,7 +2068,7 @@ async def favorite(ctx, options='', *, values: str=''):
 
             for i in range(len(data_keys)):
                 favorite_dict[data_keys[i]] = data_values[i]
-            with open("favorite.json", "w") as config_file:
+            with open("database/favorite.json", "w") as config_file:
                 json.dump(favorite_dict, config_file, indent = 4)
             await ctx.channel.send(embed=embed)
         elif options == 'list' or options == 'l':
@@ -1954,52 +2105,75 @@ async def favorite(ctx, options='', *, values: str=''):
                 pass
             await ctx.message.add_reaction('✅')
             voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+            musicdata_dict = {}
+            musicdata_values_dict = {}
+            musicdata_new_dict = {}
+            for i in range(len(musicdata_keys)):
+                musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
             if values == '-a':
+                musicdata_values_dict = musicdata_values[musicdata_keys.index('url')]
+                musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
                 for play_url in play_keys:
-                    gPlaylist.append(play_url)
+                    try:
+                        musicdata_new_dict[str(int(list(music_data['url'][str(ctx.guild.id)].keys()).max())+1)] = str(play_url)
+                    except:
+                        musicdata_new_dict[str(len(musicdata_new_dict))] = str(play_url)
+                musicdata_dict['url'][str(ctx.guild.id)] = musicdata_new_dict
+                with open("database/musicdata.json", "w") as musicdata_file:
+                    json.dump(musicdata_dict, musicdata_file, indent = 4)
+                musicdata_values_dict = musicdata_values[musicdata_keys.index('title')]
+                musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
+                for play_url in play_keys:
                     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                         info = ydl.extract_info(play_url, download=False)
-                    if 'entries' in info:
-                        music_name.append(info['entries'][0]['title'])
-                    elif 'formats' in info:
-                        music_name.append(info['title'])
-                try:
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(play_keys[0], download=False)
-                    if 'entries' in info:
-                        Url = info['entries'][0]["formats"][0]['url']
-                    elif 'formats' in info:
-                        Url = info["formats"][0]['url']
-                    pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
-                    voice.play(pplayer, after = lambda e: myafter(ctx))
-                    button_switch = True
-                    await music_button_1(ctx, info)
-                except:
-                    embed = discord.Embed(title='✅｜'+Lang['playlist_added'], color=0x81FA28)
-                    await ctx.reply(embed=embed)
+                    try:
+                        musicdata_new_dict[str(int(list(music_data['title'][str(ctx.guild.id)].keys()).max())+1)] = str(info['title'])
+                    except:
+                        musicdata_new_dict[str(len(musicdata_new_dict))] = str(info['title'])
+                musicdata_dict['title'][str(ctx.guild.id)] = musicdata_new_dict
+                with open("database/musicdata.json", "w") as musicdata_file:
+                    json.dump(musicdata_dict, musicdata_file, indent = 4)
+                load_music()
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(play_keys[0], download=False)
+                Url = info["formats"][0]['url']
             else:
                 if int(values) > len(play_keys)-1:
                     embed = discord.Embed(title='❌｜'+Lang['out-range'], color=0xEC2E2E)
                     await ctx.channel.send(embed=embed)
                     return
-                gPlaylist.append(play_keys[int(values)])
-                try:    
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(play_keys[int(values)], download=False)
-                    if 'entries' in info:
-                        Url = info['entries'][0]["formats"][0]['url']
-                        music_name.append(info['entries'][0]['title'])
-                    elif 'formats' in info:
-                        Url = info["formats"][0]['url']
-                        music_name.append(info['title'])
-        
-                    pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
-                    voice.play(pplayer, after = lambda e: myafter(ctx))
-                    button_switch = True
-                    await music_button_1(ctx, info)
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(play_keys[int(values)], download=False)
+                Url = info["formats"][0]['url']
+                musicdata_values_dict = musicdata_values[musicdata_keys.index('url')]
+                musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
+                try:
+                    musicdata_new_dict[str(int(list(music_data['url'][str(ctx.guild.id)].keys()).max())+1)] = str(play_keys[int(values)])
                 except:
-                    embed = discord.Embed(title='✅｜'+Lang['playlist_added'], color=0x81FA28)
-                    await ctx.reply(embed=embed)
+                    musicdata_new_dict[str(len(musicdata_new_dict))] = str(play_keys[int(values)])
+                musicdata_dict['url'][str(ctx.guild.id)] = musicdata_new_dict
+                with open("database/musicdata.json", "w") as musicdata_file:
+                    json.dump(musicdata_dict, musicdata_file, indent = 4)
+                musicdata_values_dict = musicdata_values[musicdata_keys.index('title')]
+                musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
+                try:
+                    musicdata_new_dict[str(int(list(music_data['title'][str(ctx.guild.id)].keys()).max())+1)] = str(info['title'])
+                except:
+                    musicdata_new_dict[str(len(musicdata_new_dict))] = str(info['title'])
+                musicdata_dict['title'][str(ctx.guild.id)] = musicdata_new_dict
+                with open("database/musicdata.json", "w") as musicdata_file:
+                    json.dump(musicdata_dict, musicdata_file, indent = 4)
+                load_music()
+                await ctx.message.add_reaction('✅')
+            try:    
+                pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
+                voice.play(pplayer, after = lambda e: myafter(ctx))
+                button_switch(ctx, 'true')
+                print('',Lang['music-playing'],list(music_data['title'][str(ctx.guild.id)].values())[0],list(music_data['url'][str(ctx.guild.id)].values())[0],'', sep='\n')
+                await music_button_1(ctx, info)
+            except:
+                embed = discord.Embed(title='✅｜'+Lang['playlist_added'], color=0x81FA28)
+                await ctx.reply(embed=embed)
         else:
             await ctx.send(content='', components=[Select(placeholder=Lang['menu-select'], options= [
                                                     SelectOption(label=prefix+'favorite add', value=prefix+'favorite add', description=Lang['favorite-menu-add'], emoji='💕'),
@@ -2057,52 +2231,51 @@ async def on_button_click(interaction):
                 Button(label='刪除專案', style='4', custom_id='delete_tick', emoji='🗑')])
     elif interaction.component.label.startswith("刪除專案"):
         await interaction.channel.delete()
-    elif interaction.component.label.startswith(Lang['music-pause']) and button_switch:
+    elif interaction.component.label.startswith(Lang['music-pause']) and music_data['button_switch'][str(interaction.author.guild.id)]:
         await interaction.send(Lang['selected']+Lang['music-pause'])
         await pause(interaction)
-    elif interaction.component.label.startswith(Lang['music-resume']) and button_switch:
+    elif interaction.component.label.startswith(Lang['music-resume']) and music_data['button_switch'][str(interaction.author.guild.id)]:
         await interaction.send(Lang['selected']+Lang['music-resume'])
         await resume(interaction)
-    elif interaction.component.label.startswith(Lang['music-list']) and button_switch:
+    elif interaction.component.label.startswith(Lang['music-list']) and music_data['button_switch'][str(interaction.author.guild.id)]:
         await interaction.send(Lang['selected']+Lang['music-list'])
         await playlist(interaction)
-    elif interaction.component.label.startswith(Lang['music-skip']) and button_switch:
+    elif interaction.component.label.startswith(Lang['music-skip']) and music_data['button_switch'][str(interaction.author.guild.id)]:
         await interaction.send(Lang['selected']+Lang['music-skip'])
         await skip(interaction)
-    elif interaction.component.label.startswith(Lang['music-stop']) and button_switch:
+    elif interaction.component.label.startswith(Lang['music-stop']) and music_data['button_switch'][str(interaction.author.guild.id)]:
         await interaction.send(Lang['selected']+Lang['music-stop'])
         await stop(interaction)
-    elif interaction.component.label.startswith(Lang['music-repeat']) and button_switch:
+    elif interaction.component.label.startswith(Lang['music-repeat']) and music_data['button_switch'][str(interaction.author.guild.id)]:
         await interaction.send(Lang['selected']+Lang['music-repeat'])
         await repeat(interaction)
-    elif interaction.component.label.startswith(Lang['music-random']) and button_switch:
+    elif interaction.component.label.startswith(Lang['music-random']) and music_data['button_switch'][str(interaction.author.guild.id)]:
         await interaction.send(Lang['selected']+Lang['music-random'])
         await listrandom(interaction)
-    elif interaction.component.label.startswith(Lang['music-favorite']) and button_switch:
-        with open('favorite.json', "r", encoding = "utf8") as favorite_file:
+    elif interaction.component.label.startswith(Lang['music-favorite']) and music_data['button_switch'][str(interaction.author.guild.id)]:
+        with open('database/favorite.json', "r", encoding = "utf8") as favorite_file:
             favorite_data = json.load(favorite_file)
         data_keys = list(favorite_data.keys())
         data_values = list(favorite_data.values())
         favorite_dict = {}
         data_values_dict = {}
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(gPlaylist[0], download=False)
+            info = ydl.extract_info(list(music_data['url'][str(interaction.author.guild.id)].values())[0], download=False)
         for i in range(len(data_keys)):
             favorite_dict[data_keys[i]] = data_values[i]
         if not favorite_data.__contains__(str(sha1.hexdigest())):
-            data_values_dict = {str(gPlaylist[0]): str(info['title'])}
-                
+            data_values_dict = {list(music_data['url'][str(interaction.author.guild.id)].values())[0]: str(info['title'])}
         else:
             data_values_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
-            data_values_dict[str(gPlaylist[0])] = str(info['title'])
+            data_values_dict[list(music_data['url'][str(interaction.author.guild.id)].values())[0]] = str(info['title'])
         favorite_dict[str(sha1.hexdigest())] = data_values_dict
 
-        with open("favorite.json", "w") as favorite_file:
+        with open("database/favorite.json", "w") as favorite_file:
             json.dump(favorite_dict, favorite_file, indent = 4)
         embed = discord.Embed(title='✅｜'+Lang['favorite-added'], description=info['title'], color=0x81FA28)
         await interaction.send(embed=embed)
-    elif interaction.component.label.startswith(Lang['music-unfavorite']) and button_switch:
-        with open('favorite.json', "r", encoding = "utf8") as favorite_file:
+    elif interaction.component.label.startswith(Lang['music-unfavorite']) and music_data['button_switch'][str(interaction.author.guild.id)]:
+        with open('database/favorite.json', "r", encoding = "utf8") as favorite_file:
             favorite_data = json.load(favorite_file)
         data_keys = list(favorite_data.keys())
         data_values = list(favorite_data.values())
@@ -2110,15 +2283,15 @@ async def on_button_click(interaction):
         data_values_dict = {}
         remove_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
 
-        remove_url = gPlaylist[0]
+        remove_url = list(music_data['url'][str(interaction.author.guild.id)].values())[0]
         try:
             embed = discord.Embed(title='🗑｜'+Lang['favorite-removed'], description=remove_dict[remove_url], color=0x81FA28)
             del favorite_data[str(sha1.hexdigest())][str(remove_url)]
         except:
-            embed = discord.Embed(title='❌｜'+Lang['favorite-remove-not-favorite'], color=0x81FA28)
+            embed = discord.Embed(title='❌｜'+Lang['favorite-remove-not-favorite'], color=0xEC2E2E)
         for i in range(len(data_keys)):
             favorite_dict[data_keys[i]] = data_values[i]
-        with open("favorite.json", "w") as config_file:
+        with open("database/favorite.json", "w") as config_file:
             json.dump(favorite_dict, config_file, indent = 4)
         await interaction.send(embed=embed)
 
