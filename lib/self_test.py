@@ -1,4 +1,4 @@
-import os, json, hashlib
+import os, json, hashlib, requests
 
 def error():
     error = input('Press Enter to continue')
@@ -42,7 +42,7 @@ def check(data, lang_list):
         if data['debug-mode']:
             print('load owner-id setting --- success')
 
-    if data['enter-private-voice-channel-id'] == '' or data['private-voice-category-id'] == '' or data['picture-only-channel-id'] == '' or data['ticket-category-id'] == '':
+    if data['ticket-category-id'] == '':
         if data['debug-mode']:
            print('load channel-id setting --- fail',end='\n\n')
         error()
@@ -59,38 +59,30 @@ def check_config():
         print('load config setting --- fail')
         error()
     data_list = list(data.values())
-    command_data_list = list(data['commands'].values())
-    num_list =[14, 16, 18, 19]
     bool_list = [True, False]
-    for i in num_list:
+    for i in [10, 11]:
         if data_list[i] not in bool_list:
             if data['debug-mode']:
                 print('Error: In config setting:', data_list[i],'<-- only can be "true" or "false"')
             error()
-    for j in command_data_list:
-        if j not in bool_list:
-            if data['debug-mode']:
-                print('Error: In config setting:', j,'<-- only can be "true" or "false"')
-            error()
+    if data['custom-activity'] not in ['playing', 'streaming', 'listening', 'watching']:
+        if data['debug-mode']:
+            print('Error: In config setting:', data['custom-activity'],'<-- only can be "playing", "streaming", "listening" or "watching"')
+        error()
+    if data['custom-activity'] == 'streaming' and data['activity-streaming-url'] == '':
+        if data['debug-mode']:
+            print('Error: In config setting:', 'activity-streaming-url','<-- please enter a url')
+        error()
 
 def check_file():
-    if not os.path.isdir('lang/'):
-        print('load lang folder --- fail')
-        error()
-    else:
-        print('load lang folder --- success')
-    if not os.path.isdir('lib/'):
-        print('load lib folder --- fail')
-        error()
-    else:
-        print('load lib folder --- success')
-    if not os.path.isdir('database/'):
-        print('load database folder --- fail',end='\n\n')
-        error()
-    else:
-        print('load database folder --- success',end='\n\n')
-    file_list = ['lib/lang.py', 'lib/reset.py', 'lib/error_code.py', 'database/salt.json', 'database/userdata.json', 'database/musicdata.json', 'database/chatfilter.txt', 'database/favorite.json']
-    for file in file_list:
+    for dir in ['lang', 'lib', 'database', 'database/chatfilter']:
+        if not os.path.isdir(dir+'/'):
+            print(f'load {dir} folder --- fail')
+            error()
+        else:
+            print(f'load {dir} folder --- success')
+    print('')
+    for file in ['lib/lang.py', 'lib/reset.py', 'lib/error_code.py', 'database/salt.json', 'database/userdata.json', 'database/serverdata.json', 'database/musicdata.json', 'database/favorite.json', 'database/chatfilter/DEFAULT.txt']:
         if not os.path.isfile(file):
             print(f'load {file} file --- fail')
             error()
@@ -99,10 +91,17 @@ def check_file():
     print('')
 
 def check_version(data, version):
-    sha512= hashlib.sha512()
-    sha512.update(data['version'].encode('utf-8'))
-    res = sha512.hexdigest()
-    if res != version:
+    config_sha512= hashlib.sha512()
+    config_sha512.update(data['version'].encode('utf-8'))
+    config_res = config_sha512.hexdigest()
+    try:
+        response = requests.get("https://api.github.com/repos/ccchang123/Discord-Bot/releases/latest")
+        api_sha512= hashlib.sha512()
+        api_sha512.update(response.json()['tag_name'][1:6].encode('utf-8'))
+        api_res = api_sha512.hexdigest()
+    except:
+        api_res = config_res
+    if api_res != version or config_res != version:
         if data['debug-mode']:
-            print('version error!','please use new version!','Now version: '+data['version'], sep='\n',end='\n\n')
+            print('version error!','please use new version!','Now version: '+response.json()['tag_name'][1:6], sep='\n',end='\n\n')
         error()
