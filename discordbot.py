@@ -1,20 +1,33 @@
-import discord
-from datetime import datetime
-from discord.ext import commands, tasks
-from discord_components import *
-from discord.opus import *
-from discord import FFmpegPCMAudio
-import time, random, asyncio, sys, json, os, re, requests, shutil
-from ping3 import ping as pin
-import logging
-import socket
-import tracemalloc
-from pandas import Categorical
-import youtube_dl, mechanize
-from youtubesearchpython import VideosSearch
-import wget, zipfile
+import asyncio
 import hashlib
-from lib import error_code, self_test, reset
+import json
+import logging
+import os
+import random
+import re
+import shutil
+import socket
+import sys
+import time
+import tracemalloc
+import zipfile
+import datetime
+
+import discord
+import mechanize
+import requests
+import wget
+import youtube_dl
+from discord import FFmpegPCMAudio
+from discord.ext import commands, tasks
+from discord.opus import *
+from discord_components import *
+from dislash import *
+from pandas import Categorical
+from ping3 import ping as pin
+from youtubesearchpython import VideosSearch
+
+from lib import error_code, reset, self_test, web
 
 if os.path.isfile('RunMeFirst.bat'):
     os.remove('RunMeFirst.bat')
@@ -35,8 +48,8 @@ def copyright():
                          Jvxv:
                  uggcf://ovg.yl/3YNo42k\n
                      Vaivgr gur obg:
-                 uggcf://ovg.yl/3l0ysWZ\n
-    Pbclevtug © 2022 pp_punat. Nyy evtugf erfreirq.\n
+                 uggcf://ovg.yl/3ZzlTLW\n
+    Pbclevtug © 2022 PUNAT, LH-UFV. Nyy evtugf erfreirq.\n
 -------------------------------------------------------"""
     d = {}
     for c in (65, 97):
@@ -60,16 +73,15 @@ self_test.check_file()
 with open('config.json', "r", encoding = "utf8") as file:
     data = json.load(file)
 
+version = '117a9d51a5563221118cdb43d746b70ddfc429c492ff76751948a26b9a61beb6c847fd7da26984926ced71c2b77c813689bec51f72d3528899c1c23e3488534c'
+self_test.check_version(data, version)
+
 def load_serverdata():
     global server_data, serverdata_keys, serverdata_values
     with open('database/serverdata.json', "r", encoding = "utf8") as serverdata_file:
         server_data = json.load(serverdata_file)
     serverdata_keys = list(server_data.keys())
     serverdata_values = list(server_data.values())
-#
-
-version = 'ee8adfaffb1d7bedd6e962476f76fe1aa2bc6bb9bc7c5a7cc81d4322543fd9ebd77bf0c2b5600749fb30e80a52a27e59a681d543d70487862b89f49e4d1cc25c'
-self_test.check_version(data, version)
 
 def load_userdata():
     global user_data, userdata_keys, userdata_values
@@ -91,8 +103,8 @@ def add_lang():
             Lang[lang[0]] = lang_data
 
 load_serverdata()
-add_lang()
 load_userdata()
+add_lang()
 self_test.check(data, lang_list)
 
 global_Lang = lang.lang_chose(data['language'], lang_list, data)
@@ -101,7 +113,13 @@ print(global_Lang['version'], data['version'])
 if data['debug-mode']:
     if not os.path.isdir('log/'):
         os.mkdir('log')
-    file_name = datetime.now().strftime('%Y-%m-%d')
+    file_name = datetime.datetime.now().strftime('%Y-%m-%d')
+    yesterday = (datetime.datetime.now() - datetime.timedelta(days = 1)).strftime('%Y-%m-%d')
+    if os.path.isfile('log/'+yesterday+'.log'):
+        log_zipfile = zipfile.ZipFile('log/'+yesterday+'.zip', 'w', zipfile.ZIP_DEFLATED)
+        log_zipfile.write('log/'+yesterday+'.log')
+        log_zipfile.close()
+        os.remove('log/'+yesterday+'.log')
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
     logging.basicConfig(level=logging.NOTSET, filename='log/'+file_name+'.log', filemode='a', format=FORMAT)
     print(global_Lang['debug-enabled'])
@@ -112,12 +130,14 @@ prefix = data['command-prefix']
 intents = discord.Intents.all()
 intents.members = True
 intents.guilds = True
-bot = ComponentsBot(data['command-prefix'])
+bot = ComponentsBot(data['command-prefix'],intents = intents)
 bot.remove_command('help')
+interClient = InteractionClient(bot, show_warnings=False)
+guild_id = [int(i) for i in list(server_data['guilds'].keys())]
 
 def now_time():
-    now = datetime.now()
-    date_time = '<'+now.strftime("%Y-%m-%d, %H:%M:%S")+'>'
+    now = datetime.datetime.now()
+    date_time = '['+now.strftime("%Y-%m-%d, %H:%M:%S")+']'
     return date_time
 
 with open('database/salt.json', "r", encoding = "utf8") as salt_file:
@@ -135,15 +155,14 @@ tracemalloc.start()
 
 async def main_menu_1(ctx):
     embed = discord.Embed(title='❗｜'+Lang[server_data['language'][str(ctx.guild.id)]]['menu-name'], color=0x81FA28)
-    menu_1 = await ctx.send(embed=embed, content='', components=[Select(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= [
+    menu_1 = await ctx.send(embed=embed, content='', components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= [
                                                     SelectOption(label=Lang[server_data['language'][str(ctx.guild.id)]]['menu-music'], value=Lang[server_data['language'][str(ctx.guild.id)]]['menu-music'], emoji='🎧'),
+                                                    SelectOption(label=prefix+'chlang', value=prefix+'chlang', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-chlang'], emoji='🇺🇳'),
                                                     SelectOption(label=prefix+'add', value=prefix+'add', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-add'], emoji='🛠'),
                                                     SelectOption(label=prefix+'addadmin', value=prefix+'addadmin', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-addadmin'], emoji='🛠'),
                                                     SelectOption(label=prefix+'addbypass', value=prefix+'addbypass', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-addbypass'], emoji='✅'),
                                                     SelectOption(label=prefix+'ban', value=prefix+'ban', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-ban'], emoji='🚫'),
                                                     SelectOption(label=prefix+'clear', value=prefix+'clear', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-clear'], emoji='🗑'),
-                                                    SelectOption(label=prefix+'chlang', value=prefix+'chlang', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-chlang'], emoji='🇺🇳'),
-                                                    SelectOption(label=prefix+'chact', value=prefix+'chact', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-chact'], emoji='🎊'),
                                                     SelectOption(label=prefix+'copy', value=prefix+'copy', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-copy'], emoji='✂'),
                                                     SelectOption(label=prefix+'copy -d', value=prefix+'copy'+'-d', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-copy-delete'], emoji='✂'),
                                                     SelectOption(label=prefix+'clearwarn', value=prefix+'clearwarn', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-clearwarn'], emoji='🗑'),
@@ -151,7 +170,7 @@ async def main_menu_1(ctx):
                                                     SelectOption(label=prefix+'ci', value=prefix+'ci', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-ci'], emoji='😎'),
                                                     SelectOption(label=prefix+'check', value=prefix+'check', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-check'], emoji='❓'),
                                                     SelectOption(label=prefix+'exit', value=prefix+'exit', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-exit'], emoji='⏹'),
-                                                    SelectOption(label=prefix+'gay', value=prefix+'gay', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-gay'], emoji='👨‍❤️‍👨'),
+                                                    SelectOption(label=prefix+'gay', value=prefix+'gay', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-gay'], emoji='💕'),
                                                     SelectOption(label=prefix+'kick', value=prefix+'kick', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-kick'], emoji='🦵'),
                                                     SelectOption(label=prefix+'mute', value=prefix+'mute', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-mute'], emoji='🔈'),
                                                     SelectOption(label=prefix+'ping', value=prefix+'ping', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-ping'], emoji='📌'),
@@ -174,12 +193,41 @@ async def main_menu_1(ctx):
                 embed.add_field(name=prefix+'clear '+Lang[server_data['language'][str(ctx.guild.id)]]['count']+Lang[server_data['language'][str(ctx.guild.id)]]['@user'], value=Lang[server_data['language'][str(ctx.guild.id)]]['message-clear-tip']+Lang[server_data['language'][str(ctx.guild.id)]]['@user']+Lang[server_data['language'][str(ctx.guild.id)]]["someone's"]+' '+Lang[server_data['language'][str(ctx.guild.id)]]['count']+Lang[server_data['language'][str(ctx.guild.id)]]['message-clear-tip-count'], inline=False)
                 await interaction.send(embed=embed)
             elif res == prefix+'chlang':
-                embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['usage'], description=prefix+'chlang '+Lang[server_data['language'][str(ctx.guild.id)]]['language'], color=0xEC2E2E)
-                embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['uses'], value=Lang[server_data['language'][str(ctx.guild.id)]]['change-lang-message'], inline=False)
-                await interaction.send(embed=embed)
-            elif res == prefix+'chact':
-                embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['usage'], description=prefix+'chact '+Lang[server_data['language'][str(ctx.guild.id)]]['message'], color=0xEC2E2E)
-                await interaction.send(embed=embed)
+                lang_search_list = []
+                op = []
+                num = 0
+                for i in list(Lang.keys()):
+                    with open('lang/'+i+'.json', 'r', encoding = "utf8") as lang_list:
+                        lang_name = json.load(lang_list)
+                    lang_search_list.append(i)
+                    op.append(SelectOption(label=lang_name['name'], value=str(num), emoji='🔍'))
+                    num += 1
+                sele = await interaction.send(content=Lang[server_data['language'][str(ctx.guild.id)]]['search_result'], components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= op,
+                                                custom_id='lang_select'
+                )])
+                interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'lang_select')
+                res = interaction.values[0]
+                for j in range(len(op)):
+                    try:
+                        if res == str(j):
+                            language = lang_search_list[j]
+                            serverdata_dict = {}
+                            for i in range(len(serverdata_keys)):
+                                serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
+                            serverdata_values_dict = serverdata_values[serverdata_keys.index('language')]
+                            serverdata_values_dict[str(ctx.guild.id)] = language
+                            serverdata_dict['language'] = serverdata_values_dict
+                            with open("database/serverdata.json", "w") as serverdata_file:
+                                json.dump(serverdata_dict, serverdata_file, indent = 4)
+                            load_serverdata()
+                            embed = discord.Embed(title='🇺🇳｜'+Lang[server_data['language'][str(ctx.guild.id)]]['lang-changed'], color=0x81FA28)
+                            await interaction.send(embed=embed)
+                            print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['lang-changed'], language, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
+                            break
+                        else:
+                            continue
+                    except:
+                        return
             elif res == prefix+'copy':
                 await interaction.send(Lang[server_data['language'][str(ctx.guild.id)]]['selected']+res)
                 await copy(ctx)
@@ -240,6 +288,7 @@ async def main_menu_1(ctx):
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-chat-filter'], value=prefix+'add chat-filter'+Lang[server_data['language'][str(ctx.guild.id)]]['regex'], inline=False)
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-enter-voice-channel'], value=prefix+'add enter-voice-channel'+Lang[server_data['language'][str(ctx.guild.id)]]['channel']+' ...', inline=False)
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-voice-category'], value=prefix+'add voice-category'+Lang[server_data['language'][str(ctx.guild.id)]]['category'], inline=False)
+                embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-reaction-roles'], value=prefix+'add reaction-roles'+Lang[server_data['language'][str(ctx.guild.id)]]['reaction']+Lang[server_data['language'][str(ctx.guild.id)]]['role'], inline=False)
                 await interaction.send(embed=embed)
             elif res == prefix+'remove':
                 embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['usage'], color=0xEC2E2E)
@@ -247,6 +296,7 @@ async def main_menu_1(ctx):
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-chat-filter'], value=prefix+'remove chat-filter'+Lang[server_data['language'][str(ctx.guild.id)]]['regex'], inline=False)
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-enter-voice-channel'], value=prefix+'remove enter-voice-channel'+Lang[server_data['language'][str(ctx.guild.id)]]['channel']+' ...', inline=False)
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-voice-category'], value=prefix+'remove voice-category'+Lang[server_data['language'][str(ctx.guild.id)]]['category'], inline=False)
+                embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-reaction-roles'], value=prefix+'remove reaction-roles'+Lang[server_data['language'][str(ctx.guild.id)]]['reaction'], inline=False)
                 await interaction.send(embed=embed)
             elif res == prefix+'check':
                 embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['usage'], color=0xEC2E2E)
@@ -262,11 +312,10 @@ async def main_menu_1(ctx):
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-music-bot'], value=prefix+'set music-bot'+Lang[server_data['language'][str(ctx.guild.id)]]['true_or_false'], inline=False)
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-commands'], value=prefix+'set commands'+Lang[server_data['language'][str(ctx.guild.id)]]['command']+Lang[server_data['language'][str(ctx.guild.id)]]['true_or_false'], inline=False)
                 await interaction.send(embed=embed)
-        except:
-            pass
+        except: ...
 async def main_menu_2(ctx):
     embed = discord.Embed(title='❗｜'+Lang[server_data['language'][str(ctx.guild.id)]]['menu-name'], color=0x81FA28)
-    menu_2 = await ctx.send(embed=embed, content='', components=[Select(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= [
+    menu_2 = await ctx.send(embed=embed, content='', components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= [
                                                     SelectOption(label=Lang[server_data['language'][str(ctx.guild.id)]]['previous-page'], value=Lang[server_data['language'][str(ctx.guild.id)]]['previous-page'], emoji='⬅'),
                                                     SelectOption(label=prefix+'showwarn', value=prefix+'showwarn', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-showwarn'], emoji='📄'),
                                                     SelectOption(label=prefix+'slowmode', value=prefix+'slowmode', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-slowmoe'], emoji='🐢'),
@@ -323,63 +372,74 @@ async def main_menu_2(ctx):
             elif res == prefix+'showwarn':
                 embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['usage'], description=prefix+'showwarn '+Lang[server_data['language'][str(ctx.guild.id)]]['@user'], color=0xEC2E2E)
                 await interaction.send(embed=embed)
-        except:
-            pass
+        except: ...
 async def music_menu(ctx):
     embed = discord.Embed(title='❗｜'+Lang[server_data['language'][str(ctx.guild.id)]]['menu-music-name'], color=0x81FA28)
-    await ctx.send(embed=embed, content='', components=[Select(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= [
-                                                    SelectOption(label=prefix+'play', value=prefix+'play', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-play'], emoji='▶'),
-                                                    SelectOption(label=prefix+'leave', value=prefix+'leave', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-leave'], emoji='⏹'),
-                                                    SelectOption(label=prefix+'pause', value=prefix+'pause', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-pause'], emoji='⏸'),
-                                                    SelectOption(label=prefix+'resume', value=prefix+'resume', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-resume'], emoji='⏯'),
-                                                    SelectOption(label=prefix+'repeat', value=prefix+'repeat', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-repeat'], emoji='🔁'),
-                                                    SelectOption(label=prefix+'stop', value=prefix+'stop', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-stop'], emoji='⏹'),
-                                                    SelectOption(label=prefix+'volume', value=prefix+'volume', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-volume'], emoji='🔊'),
-                                                    SelectOption(label=prefix+'skip', value=prefix+'skip', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-skip'], emoji='⏩'),
-                                                    SelectOption(label=prefix+'playlist', value=prefix+'playlist', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-playlist'], emoji='📜'),
-                                                    SelectOption(label=prefix+'listmove', value=prefix+'listmove', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-listmove'], emoji='🔃'),
-                                                    SelectOption(label=prefix+'listremove', value=prefix+'listremove', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-listremove'], emoji='🗑'),
-                                                    SelectOption(label=prefix+'listrandom', value=prefix+'listrandom', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-listrandom'], emoji='🔀'),
-                                                    SelectOption(label=prefix+'favorite add', value=prefix+'favorite add', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-add'], emoji='💕'),
-                                                    SelectOption(label=prefix+'favorite remove', value=prefix+'favorite remove', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-remove'], emoji='🗑'),
-                                                    SelectOption(label=prefix+'favorite list', value=prefix+'favorite list', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-list'], emoji='📜'),
-                                                    SelectOption(label=prefix+'favorite play', value=prefix+'favorite play', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-play'], emoji='▶')
+    await ctx.send(embed=embed, content='', components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= [
+                                                    SelectOption(label=prefix+'play', value='play', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-play'], emoji='▶'),
+                                                    SelectOption(label=prefix+'leave', value='leave', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-leave'], emoji='⏹'),
+                                                    SelectOption(label=prefix+'pause', value='pause', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-pause'], emoji='⏸'),
+                                                    SelectOption(label=prefix+'resume', value='resume', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-resume'], emoji='⏯'),
+                                                    SelectOption(label=prefix+'repeat', value='repeat', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-repeat'], emoji='🔁'),
+                                                    SelectOption(label=prefix+'stop', value='stop', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-stop'], emoji='⏹'),
+                                                    SelectOption(label=prefix+'volume', value='volume', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-volume'], emoji='🔊'),
+                                                    SelectOption(label=prefix+'skip', value='skip', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-skip'], emoji='⏩'),
+                                                    SelectOption(label=prefix+'playlist', value='playlist', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-playlist'], emoji='📜'),
+                                                    SelectOption(label=prefix+'listmove', value='listmove', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-listmove'], emoji='🔃'),
+                                                    SelectOption(label=prefix+'listremove', value='listremove', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-listremove'], emoji='🗑'),
+                                                    SelectOption(label=prefix+'listrandom', value='listrandom', description=Lang[server_data['language'][str(ctx.guild.id)]]['menu-message-listrandom'], emoji='🔀'),
+                                                    SelectOption(label=prefix+'favorite add', value='favorite add', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-add'], emoji='💕'),
+                                                    SelectOption(label=prefix+'favorite remove', value='favorite remove', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-remove'], emoji='🗑'),
+                                                    SelectOption(label=prefix+'favorite list', value='favorite list', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-list'], emoji='📜'),
+                                                    SelectOption(label=prefix+'favorite play', value='favorite play', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-play'], emoji='▶')
                                                 ],
                                                 custom_id='music_menu'
     )])
-    while True:
-        interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'music_menu')
-        res = interaction.values[0]
-        try:
-            if res == prefix+'leave':
-                await leave(ctx)
-            elif res == prefix+'pause':
-                await pause(ctx)
-            elif res == prefix+'resume':
-                await resume(ctx)
-            elif res == prefix+'repeat':
-                await repeat(ctx)
-            elif res == prefix+'stop':
-                await stop(ctx)
-            elif res == prefix+'skip':
-                await skip(ctx)
-            elif res == prefix+'playlist':
-                await playlist(ctx)
-            elif res == prefix+'listrandom':
-                await listrandom(ctx)
-            elif res == prefix+'favorite list':
-                await favorite(interaction, 'list')
-        except:
-            pass
 
+@bot.event
+async def on_select_option(interaction):
+    match interaction.values[0]:
+        case 'leave':
+            await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+interaction.values[0])
+            await leave(interaction)
+        case 'pause':
+            await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+interaction.values[0])
+            await pause(interaction)
+        case 'resume':
+            await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+interaction.values[0])
+            await resume(interaction)
+        case 'repeat':
+            await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+interaction.values[0])
+            await repeat(interaction)
+        case 'stop':
+            await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+interaction.values[0])
+            await stop(interaction)
+        case 'skip':
+            await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+interaction.values[0])
+            await skip(interaction)
+        case 'playlist':
+            await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+interaction.values[0])
+            await playlist(interaction)
+        case 'listrandom':
+            await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+interaction.values[0])
+            await listrandom(interaction)
+        case 'favorite list':
+            await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+interaction.values[0])
+            await favorite(interaction, 'list')
 
 @bot.event
 async def on_ready():
     print(global_Lang['server-added'], len(bot.guilds))
     member_count = 0
+    guild_dict = {}
     for i in range(len(bot.guilds)):
-        print(bot.guilds[i].id, ':', bot.guilds[i].name)
+        guild_dict[bot.guilds[i].id] = bot.guilds[i].name
+        print(bot.guilds[i].id, ':', bot.guilds[i].name, f'({bot.guilds[i].member_count})')
         member_count += bot.guilds[i].member_count
+    server_data['guilds'] = guild_dict
+    with open("database/serverdata.json", "w") as serverdata_file:
+        json.dump(server_data, serverdata_file, indent = 4)
+    load_serverdata() 
     print(global_Lang['member-count'], f'{len(user_salt)} / {member_count}', f'({str((len(user_salt)/member_count)*100)[:5]} %)',end='\n\n')
     print(now_time(), global_Lang['login-name'], bot.user)
     match data['custom-activity']:
@@ -403,11 +463,13 @@ async def on_ready():
         case _:
             await bot.change_presence(status=discord.Status.online, activity=activity)
 
-
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CommandNotFound):
         await ctx.reply(Lang[server_data['language'][str(ctx.guild.id)]]['unknown-command'])
+        return
+    if isinstance(error, commands.errors.MemberNotFound):
+        await ctx.reply(Lang[server_data['language'][str(ctx.guild.id)]]['unknown-member'])
         return
     raise error
 
@@ -418,8 +480,7 @@ async def on_voice_state_update(member, before, after):
         if before.channel.members == [] and not before.channel.id in server_data['enter-voice-channel'][str(member.guild.id)]:
             if before.channel.category_id in server_data['voice-category'][str(member.guild.id)] and before.channel.name == member.name + Lang[server_data['language'][str(member.guild.id)]]['create-channel-name']:
                 await before.channel.delete()
-    except:
-        pass
+    except: ...
     if channel == None:
         return
     try:
@@ -430,17 +491,19 @@ async def on_voice_state_update(member, before, after):
             await member.move_to(voice_channel)
             await voice_channel.set_permissions(member, manage_channels=True, manage_permissions=True)
             print(now_time(), member, Lang[server_data['language'][str(member.guild.id)]]['when-channel-create'])
-    except:
-        pass
+    except: ...
 
 @bot.command()
 async def menu(ctx, page: str='1'):
-    if page == '1':
-        await main_menu_1(ctx)
-    elif page == '2':
-        await main_menu_2(ctx)
-    elif page == 'music':
-        await music_menu(ctx)
+    match page:
+        case '1':
+            await main_menu_1(ctx)
+        case '2':
+            await main_menu_2(ctx)
+        case 'music':
+            await music_menu(ctx)
+        case _:
+            await main_menu_1(ctx)
 
 @bot.command()
 async def addadmin(ctx, user: discord.Member=None):
@@ -461,12 +524,6 @@ async def addadmin(ctx, user: discord.Member=None):
                 await ctx.channel.send(embed=embed)
             else:
                 userdata_dict = {}
-                userdata_values_dict = {}
-                userdata_new_dict = {}
-                with open('database/userdata.json', "r", encoding = "utf8") as userdata_file:
-                    user_data = json.load(userdata_file)
-                userdata_keys = list(user_data.keys())
-                userdata_values = list(user_data.values())
                 for i in range(len(userdata_keys)):
                     userdata_dict[userdata_keys[i]] = userdata_values[i]
                 userdata_values_dict = userdata_values[userdata_keys.index('admin')]
@@ -502,12 +559,6 @@ async def addbypass(ctx, user: discord.Member=None):
                 await ctx.channel.send(embed=embed)
             else:
                 userdata_dict = {}
-                userdata_values_dict = {}
-                userdata_new_dict = {}
-                with open('database/userdata.json', "r", encoding = "utf8") as userdata_file:
-                    user_data = json.load(userdata_file)
-                userdata_keys = list(user_data.keys())
-                userdata_values = list(user_data.values())
                 for i in range(len(userdata_keys)):
                     userdata_dict[userdata_keys[i]] = userdata_values[i]
                 userdata_values_dict = userdata_values[userdata_keys.index('bypass')]
@@ -538,12 +589,12 @@ async def ban(ctx, user: discord.Member=None, options='None', *, reason='None'):
             embed=discord.Embed(title=str(user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-banned'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+reason, color=0x81FA28)
             try:
                 await user.send(embed=embed)
-            except:
-                pass
+            except: ...
             await ctx.guild.ban(user, reason=reason)
             await ctx.channel.send(embed=embed)
             print(now_time(), str(user), Lang[server_data['language'][str(ctx.guild.id)]]['user-banned'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], reason, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
         elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            salt(user.id)
             user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
             user_sha1.update(str(user.id).encode('utf-8'))
             if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
@@ -552,8 +603,7 @@ async def ban(ctx, user: discord.Member=None, options='None', *, reason='None'):
                 embed=discord.Embed(title=str(user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-banned'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+options, color=0x81FA28)
                 try:
                     await user.send(embed=embed)
-                except:
-                    pass
+                except: ...
                 await ctx.guild.ban(user, reason=reason)
                 await ctx.channel.send(embed=embed)
                 print(now_time(), str(user), Lang[server_data['language'][str(ctx.guild.id)]]['user-banned'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], options, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
@@ -579,8 +629,7 @@ async def clear(ctx, limit=0, member: discord.Member=None):
             if not member:
                 try:
                     await ctx.channel.purge(limit=limit)
-                except:
-                    pass
+                except: ...
                 print(now_time(), str(limit), Lang[server_data['language'][str(ctx.guild.id)]]['message-cleared'], Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
                 embed = discord.Embed(title='🗑｜'+str(limit)+Lang[server_data['language'][str(ctx.guild.id)]]['message-cleared'], color=0x81FA28)
                 await ctx.channel.send(embed=embed, delete_after=3)
@@ -605,19 +654,52 @@ async def chlang(ctx, language=''):
         sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
         sha1.update(str(ctx.author.id).encode('utf-8'))
         if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
-            await ctx.message.delete()
             if language == '':
-                embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['usage'], description=prefix+'chlang '+Lang[server_data['language'][str(ctx.guild.id)]]['language'], color=0xEC2E2E)
-                embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['uses'], value=Lang[server_data['language'][str(ctx.guild.id)]]['change-lang-message'], inline=False)
-                await ctx.channel.send(embed=embed, delete_after=5)
+                lang_search_list = []
+                op = []
+                num = 0
+                for i in list(Lang.keys()):
+                    with open('lang/'+i+'.json', 'r', encoding = "utf8") as lang_list:
+                        lang_name = json.load(lang_list)
+                    lang_search_list.append(i)
+                    op.append(SelectOption(label=lang_name['name'], value=str(num), emoji='🔍'))
+                    num += 1
+                sele = await ctx.reply(content='', components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= op,
+                                                custom_id='lang_select'
+                )])
+                interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'lang_select')
+                res = interaction.values[0]
+                for j in range(len(op)):
+                    try:
+                        if res == str(j):
+                            await ctx.message.delete()
+                            await sele.delete()
+                            language = lang_search_list[j]
+                            serverdata_dict = {}
+                            for i in range(len(serverdata_keys)):
+                                serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
+                            serverdata_values_dict = serverdata_values[serverdata_keys.index('language')]
+                            serverdata_values_dict[str(ctx.guild.id)] = language
+                            serverdata_dict['language'] = serverdata_values_dict
+                            with open("database/serverdata.json", "w") as serverdata_file:
+                                json.dump(serverdata_dict, serverdata_file, indent = 4)
+                            load_serverdata()
+                            embed = discord.Embed(title='🇺🇳｜'+Lang[server_data['language'][str(ctx.guild.id)]]['lang-changed'], color=0x81FA28)
+                            await interaction.send(embed=embed)
+                            print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['lang-changed'], language, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
+                            break
+                        else:
+                            continue
+                    except:
+                        return
             else:
+                await ctx.message.delete()
                 if '_' in language:
                     language = re.sub('_', '-', language)
                 checked = await lang.chlang_check(ctx, language, Lang[server_data['language'][str(ctx.guild.id)]], data)
                 if not checked:
                     return
                 serverdata_dict = {}
-                serverdata_values_dict = {}
                 for i in range(len(serverdata_keys)):
                     serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
                 serverdata_values_dict = serverdata_values[serverdata_keys.index('language')]
@@ -629,26 +711,6 @@ async def chlang(ctx, language=''):
                 embed = discord.Embed(title='🇺🇳｜'+Lang[server_data['language'][str(ctx.guild.id)]]['lang-changed'], color=0x81FA28)
                 await ctx.channel.send(embed=embed)
                 print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['lang-changed'], language, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
-        else:
-            await error_code.permission(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
-    else:
-        await error_code.command_disabled(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
-
-@bot.command()
-async def chact(ctx, *, act=''):
-    if server_data['commands'][str(ctx.guild.id)]['chact']:
-        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
-        sha1.update(str(ctx.author.id).encode('utf-8'))
-        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
-            await ctx.message.delete()
-            if act == '':
-                embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['usage'], description=prefix+'chact '+Lang[server_data['language'][str(ctx.guild.id)]]['message'], color=0xEC2E2E)
-                await ctx.channel.send(embed=embed, delete_after=5)
-            else:
-                game = discord.Game(act)
-                await bot.change_presence(status=discord.Status.online, activity=game)
-                await ctx.channel.send(Lang[server_data['language'][str(ctx.guild.id)]]['activity-changed']+' '+act)
-                print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['activity-changed'], act, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
         else:
             await error_code.permission(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
     else:
@@ -689,20 +751,16 @@ async def clearwarn(ctx, member: discord.Member=None, options=''):
                     await ctx.channel.send(Lang[server_data['language'][str(ctx.guild.id)]]['user-nowarn'])
                     return
                 else:
-                    with open('database/userdata.json', 'w') as f:
-                        json.dump(user_data, f, indent = 4)
-                    clearwarn_dict = {}
-                    clearwarn_values_dict = {}
-                    clearwarn_new_dict = {}
+                    userdata_dict = {}
                     if options == '':
                         for i in range(len(userdata_keys)):
-                            clearwarn_dict[userdata_keys[i]] = userdata_values[i]
-                        clearwarn_values_dict = userdata_values[userdata_keys.index('warns')]
-                        clearwarn_new_dict = clearwarn_values_dict[str(ctx.guild.id)]
-                        clearwarn_new_dict[str(member_sha1.hexdigest())] = str(int(user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())]) - 1)
-                        clearwarn_dict['warns'][str(ctx.guild.id)] = clearwarn_new_dict
+                            userdata_dict[userdata_keys[i]] = userdata_values[i]
+                        userdata_values_dict = userdata_values[userdata_keys.index('warns')]
+                        userdata_new_dict = userdata_values_dict[str(ctx.guild.id)]
+                        userdata_new_dict[str(member_sha1.hexdigest())] = str(int(user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())]) - 1)
+                        userdata_dict['warns'][str(ctx.guild.id)] = userdata_new_dict
                         with open('database/userdata.json', 'w') as f:
-                            json.dump(clearwarn_dict, f, indent = 4)
+                            json.dump(userdata_dict, f, indent = 4)
                         load_userdata()
                         embed = discord.Embed(title=member.name+Lang[server_data['language'][str(ctx.guild.id)]]['warn-amount']+user_data['warns'][str(ctx.guild.id)][str(member_sha1.hexdigest())], color=0xEC2E2E)
                         await ctx.channel.send(embed=embed)
@@ -757,10 +815,19 @@ async def exit(ctx):
             if ctx.author.id != data['owner-id']:
                 await ctx.send(Lang[server_data['language'][str(ctx.guild.id)]]['not-owner'], delete_after=3)
                 return
-            await ctx.message.delete()
-            game = discord.Game(now_time())
-            await bot.change_presence(status=discord.Status.offline, activity=game)
-            sys.exit()
+            reset_confirm = await ctx.reply(Lang[server_data['language'][str(ctx.guild.id)]]['RESET-confirm'], components = [ActionRow(
+                    Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['RESET-confirm-button'], style='3', custom_id='confirm'),
+                    Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['RESET-cancel-button'], style='4', custom_id='cancel')
+            )])
+            interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
+            res = interaction.custom_id
+            if res == 'confirm':
+                await reset_confirm.delete()
+                await interaction.send(Lang[server_data['language'][str(ctx.guild.id)]]['RESET-resetted'])
+                sys.exit()
+            else:
+                await reset_confirm.delete()
+                await interaction.send(Lang[server_data['language'][str(ctx.guild.id)]]['RESET-canceled'])
         else:
             await error_code.permission(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
     else:
@@ -775,11 +842,11 @@ async def gay(ctx, member: discord.Member=None):
             await asyncio.sleep(5)
             await ctx.message.delete()
         else:
-            embed = discord.Embed(title=str(random.randrange(100))+'% gay', color=0x4b49d8)
+            gay = str(random.randrange(101))+'% gay'
+            embed = discord.Embed(title=gay, color=0x4b49d8)
             embed.set_author(name=member, icon_url=member.avatar_url)
             await ctx.channel.send(embed=embed, delete_after=5)
-            await asyncio.sleep(5)
-            await ctx.message.delete()
+            print(now_time() ,member, gay)
     else:
         await error_code.command_disabled(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
 
@@ -796,12 +863,12 @@ async def kick(ctx, user: discord.Member=None, options='None', *, reason='None')
             embed=discord.Embed(title=str(user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-kicked'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+reason, color=0x81FA28)
             try:
                 await user.send(embed=embed)
-            except:
-                pass
-            await ctx.guild.kick(user)
+            except: ...
+            await ctx.guild.kick(user, reason=reason)
             await ctx.channel.send(embed=embed)
             print(now_time(), str(user), Lang[server_data['language'][str(ctx.guild.id)]]['user-kicked'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], reason, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
         elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            salt(user.id)
             user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
             user_sha1.update(str(user.id).encode('utf-8'))
             if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
@@ -810,9 +877,8 @@ async def kick(ctx, user: discord.Member=None, options='None', *, reason='None')
                 embed=discord.Embed(title=str(user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-kicked'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+options, color=0x81FA28)
                 try:
                     await user.send(embed=embed)
-                except:
-                    pass
-                await ctx.guild.kick(user)
+                except: ...
+                await ctx.guild.kick(user, reason=options)
                 await ctx.channel.send(embed=embed)
                 print(now_time(), str(user), Lang[server_data['language'][str(ctx.guild.id)]]['user-kicked'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], options, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
         else:
@@ -844,19 +910,19 @@ async def mute(ctx, user: discord.Member=None, options='None', *, reason='None')
             await user.send(embed=embed)
             print(now_time(), str(user), Lang[server_data['language'][str(ctx.guild.id)]]['user-muted'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], reason, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
         elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            salt(user.id)
             user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
             user_sha1.update(str(user.id).encode('utf-8'))
             if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
                 await error_code.bypass(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
             else:
-                guild = ctx.guild
-                mutedRole = discord.utils.get(guild.roles, name=Lang[server_data['language'][str(ctx.guild.id)]]['mute-role-name'])
-                all_roles = await guild.fetch_roles()
+                mutedRole = discord.utils.get(ctx.guild.roles, name=Lang[server_data['language'][str(ctx.guild.id)]]['mute-role-name'])
+                all_roles = await ctx.guild.fetch_roles()
                 num_roles = len(all_roles)
                 if not mutedRole:
-                    mutedRole = await guild.create_role(name=Lang[server_data['language'][str(ctx.guild.id)]]['mute-role-name'])
+                    mutedRole = await ctx.guild.create_role(name=Lang[server_data['language'][str(ctx.guild.id)]]['mute-role-name'])
                     await mutedRole.edit(position=num_roles - 2)
-                    for channel in guild.channels:
+                    for channel in ctx.guild.channels:
                         await channel.set_permissions(mutedRole, speak=False, send_messages=False)
                 await user.add_roles(mutedRole, reason=options)
                 embed=discord.Embed(title=str(user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-muted'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+options, color=0x81FA28)
@@ -891,7 +957,10 @@ async def ping(ctx, ip: str='', options=''):
                         suc += 1
                         ms += int(response*1000)
                     else:
-                        host_ip = ''
+                        try:
+                            host_ip = socket.gethostbyname(ip)
+                        except:
+                            host_ip = ''
                         info += Lang[server_data['language'][str(ctx.guild.id)]]['ping-timeout']+'\n'
                         ping_list.append('N/A')
                         fail += 1
@@ -932,10 +1001,10 @@ async def RESET(ctx):
                 await ctx.send(Lang[server_data['language'][str(ctx.guild.id)]]['reset-error'], delete_after=3)
                 return
             else:
-                reset_confirm = await ctx.reply(Lang[server_data['language'][str(ctx.guild.id)]]['RESET-confirm'], components = [[
+                reset_confirm = await ctx.reply(Lang[server_data['language'][str(ctx.guild.id)]]['RESET-confirm'], components = [ActionRow(
                     Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['RESET-confirm-button'], style='3', custom_id='confirm'),
                     Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['RESET-cancel-button'], style='4', custom_id='cancel')
-                ]])
+                )])
                 interaction = await bot.wait_for('button_click', check = lambda inter: inter.user == ctx.author)
                 res = interaction.custom_id
                 if res == 'confirm':
@@ -961,7 +1030,6 @@ async def reload(ctx):
             load_userdata()
             load_serverdata()
             data = json.load(open('config.json'))
-            prefix = data['command-prefix']
             self_test.check_config()
             match data['custom-activity']:
                 case 'playing':
@@ -1006,10 +1074,6 @@ async def removeadmin(ctx, user: discord.Member=None):
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
                 userdata_dict = {}
-                with open('database/userdata.json', "r", encoding = "utf8") as userdata_file:
-                    user_data = json.load(userdata_file)
-                userdata_keys = list(user_data.keys())
-                userdata_values = list(user_data.values())
                 try:
                     sha512= hashlib.sha512()
                     sha512.update(str(user).encode('utf-8'))
@@ -1039,10 +1103,6 @@ async def removebypass(ctx, user: discord.Member=None):
                 await ctx.channel.send(embed=embed, delete_after=5)
             else:
                 userdata_dict = {}
-                with open('database/userdata.json', "r", encoding = "utf8") as userdata_file:
-                    user_data = json.load(userdata_file)
-                userdata_keys = list(user_data.keys())
-                userdata_values = list(user_data.values())
                 try:
                     sha512= hashlib.sha512()
                     sha512.update(str(user).encode('utf-8'))
@@ -1130,6 +1190,7 @@ async def add(ctx, options: str='', *, id: str=''):
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-chat-filter'], value=prefix+'add chat-filter'+Lang[server_data['language'][str(ctx.guild.id)]]['regex'], inline=False)
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-enter-voice-channel'], value=prefix+'add enter-voice-channel'+Lang[server_data['language'][str(ctx.guild.id)]]['channel']+' ...', inline=False)
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-voice-category'], value=prefix+'add voice-category'+Lang[server_data['language'][str(ctx.guild.id)]]['category'], inline=False)
+                embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-reaction-roles'], value=prefix+'add reaction-roles'+Lang[server_data['language'][str(ctx.guild.id)]]['reaction']+Lang[server_data['language'][str(ctx.guild.id)]]['role'], inline=False)
                 await ctx.channel.send(embed=embed)
                 return
             if options == 'chat-filter':
@@ -1143,6 +1204,12 @@ async def add(ctx, options: str='', *, id: str=''):
                 else:
                     with open('database/chatfilter/'+str(ctx.guild.id)+'.txt', "r", encoding = "utf8") as words:
                         badwords = words.read().split()
+                    if ' ' in ctx.message.content:
+                        temp = re.split('\s', id)
+                        content = ''
+                        for word in temp:
+                            content += f'({word})\s'
+                        id = content[0:-2]
                     if id not in badwords:
                         with open('database/chatfilter/'+str(ctx.guild.id)+'.txt', "a", encoding = "utf8") as words:
                             words.write(f'{id}\n')
@@ -1153,7 +1220,6 @@ async def add(ctx, options: str='', *, id: str=''):
                 await ctx.channel.send(embed=embed)
                 return
             serverdata_dict = {}
-            serverdata_values_dict = {}
             for i in range(len(serverdata_keys)):
                 serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
             if options == 'picture-only-channel':
@@ -1200,6 +1266,26 @@ async def add(ctx, options: str='', *, id: str=''):
                 serverdata_dict['voice-category'] = serverdata_values_dict
                 embed = discord.Embed(title='✅｜'+Lang[server_data['language'][str(ctx.guild.id)]]['add-voice-category'], description=channels, color=0x81FA28)
                 print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['add-voice-category'], '\n', channels)
+            if options == 'reaction-roles':
+                serverdata_values_dict = serverdata_values[serverdata_keys.index('reaction-roles')]
+                temp = [i for i in re.split('\s', id) if i != '']
+                try:
+                    role = discord.utils.get(ctx.guild.roles, id=int(temp[-1][3:-1]))
+                    if not role or len(temp) != 2:
+                        raise
+                    if role.position >= ctx.guild.get_member(bot.user.id).top_role.position:
+                        embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['add-reaction-roles-highest'], color=0xEC2E2E)
+                        await ctx.reply(embed=embed)
+                        return
+                except:
+                    embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['add-reaction-roles-error'], color=0xEC2E2E)
+                    await ctx.reply(embed=embed)
+                    return
+                serverdata_new_dict = serverdata_values_dict[str(ctx.guild.id)]
+                serverdata_new_dict[temp[0]] = temp[-1]
+                serverdata_dict['reaction-roles'][str(ctx.guild.id)] = serverdata_new_dict
+                embed = discord.Embed(title='✅｜'+Lang[server_data['language'][str(ctx.guild.id)]]['add-reaction-roles'], description=temp[0]+' : '+temp[-1], color=0x81FA28)
+                print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['add-reaction-roles'], '\n', temp[0], temp[-1])
             with open("database/serverdata.json", "w") as serverdata_file:
                 json.dump(serverdata_dict, serverdata_file, indent = 4)
             load_serverdata()
@@ -1221,6 +1307,7 @@ async def remove(ctx, options: str='', *, id: str=''):
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-chat-filter'], value=prefix+'remove chat-filter'+Lang[server_data['language'][str(ctx.guild.id)]]['regex'], inline=False)
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-enter-voice-channel'], value=prefix+'remove enter-voice-channel'+Lang[server_data['language'][str(ctx.guild.id)]]['channel']+' ...', inline=False)
                 embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-voice-category'], value=prefix+'remove voice-category'+Lang[server_data['language'][str(ctx.guild.id)]]['category'], inline=False)
+                embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['set-reaction-roles'], value=prefix+'remove reaction-roles'+Lang[server_data['language'][str(ctx.guild.id)]]['reaction'], inline=False)
                 await ctx.channel.send(embed=embed)
                 return
             if options == 'chat-filter':
@@ -1236,7 +1323,6 @@ async def remove(ctx, options: str='', *, id: str=''):
                 await ctx.channel.send(embed=embed)
                 return
             serverdata_dict = {}
-            serverdata_values_dict = {}
             for i in range(len(serverdata_keys)):
                 serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
             if options == 'picture-only-channel':
@@ -1280,6 +1366,12 @@ async def remove(ctx, options: str='', *, id: str=''):
                 serverdata_dict['voice-category'] = serverdata_values_dict
                 embed = discord.Embed(title='✅｜'+Lang[server_data['language'][str(ctx.guild.id)]]['remove-voice-category'], description=channels, color=0x81FA28)
                 print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['remove-voice-category'], '\n', channels)
+            if options == 'reaction-roles':
+                serverdata_dict = server_data
+                role = serverdata_dict['reaction-roles'][str(ctx.guild.id)][id]
+                del serverdata_dict['reaction-roles'][str(ctx.guild.id)][id]
+                embed = discord.Embed(title='✅｜'+Lang[server_data['language'][str(ctx.guild.id)]]['remove-reaction-roles'], description=id+' : '+role, color=0x81FA28)
+                print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['remove-reaction-roles'], '\n', id, role)
             with open("database/serverdata.json", "w") as serverdata_file:
                 json.dump(serverdata_dict, serverdata_file, indent = 4)
             load_serverdata()
@@ -1350,7 +1442,6 @@ async def set(ctx, options: str='', content: str='', TF: str=''):
                 await ctx.channel.send(embed=embed)
                 return
             serverdata_dict = {}
-            serverdata_values_dict = {}
             for i in range(len(serverdata_keys)):
                 serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
             if options == 'auto-action':
@@ -1437,7 +1528,6 @@ async def set(ctx, options: str='', content: str='', TF: str=''):
     else:
         if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
             serverdata_dict = {}
-            serverdata_values_dict = {}
             for i in range(len(serverdata_keys)):
                 serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
             if options != 'commands':
@@ -1532,6 +1622,7 @@ async def tempmute(ctx, user: discord.Member=None, duration='0s', options='None'
             await asyncio.sleep(uptime)
             await user.remove_roles(mutedRole)
         elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            salt(user.id)
             user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
             user_sha1.update(str(user.id).encode('utf-8'))
             if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
@@ -1580,8 +1671,7 @@ async def tempban(ctx, user: discord.Member=None, duration='0s', options='None',
             embed=discord.Embed(title=str(user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-tempbanned'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+options, color=0x81FA28)
             try:
                 await user.send(embed=embed)
-            except:
-                pass
+            except: ...
             await ctx.guild.ban(user, reason=reason)
             await ctx.channel.send(embed=embed)
             print(now_time(), str(user), Lang[server_data['language'][str(ctx.guild.id)]]['user-tempbanned'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], options, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
@@ -1598,6 +1688,7 @@ async def tempban(ctx, user: discord.Member=None, duration='0s', options='None',
             await asyncio.sleep(uptime)
             await user.unban(user)
         elif ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            salt(user.id)
             user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
             user_sha1.update(str(user.id).encode('utf-8'))
             if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
@@ -1606,8 +1697,7 @@ async def tempban(ctx, user: discord.Member=None, duration='0s', options='None',
                 embed=discord.Embed(title=str(user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-tempbanned'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+options, color=0x81FA28)
                 try:
                     await user.send(embed=embed)
-                except:
-                    pass
+                except: ...
                 await ctx.guild.ban(user, reason=reason)
                 await ctx.channel.send(embed=embed)
                 print(now_time(), str(user), Lang[server_data['language'][str(ctx.guild.id)]]['user-tempbanned'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], options, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
@@ -1689,9 +1779,8 @@ async def uinfo(ctx, target: discord.Member=None):
                 amount = user_data['warns'][str(ctx.guild.id)][str(target_sha1.hexdigest())]
             except:
                 amount = '0'
-            embed = discord.Embed(title='🔍｜'+Lang[server_data['language'][str(ctx.guild.id)]]['user-info'], colour=target.colour, timestamp=datetime.utcnow())
+            embed = discord.Embed(title='🔍｜'+Lang[server_data['language'][str(ctx.guild.id)]]['user-info'], colour=target.colour, timestamp=datetime.datetime.utcnow())
             embed.set_thumbnail(url=target.avatar_url)
-
             fields = [(Lang[server_data['language'][str(ctx.guild.id)]]['user-info-name'], str(target), True),
                         (Lang[server_data['language'][str(ctx.guild.id)]]['user-info-nickname'], target.nick, True),
 	        			(Lang[server_data['language'][str(ctx.guild.id)]]['user-info-id'], target.id, True),
@@ -1725,24 +1814,18 @@ async def warn(ctx, user: discord.Member=None, options='None', *, reason='None')
         user_sha1 = hashlib.sha1(user_salt[str(user.id)].encode('utf-8'))
         user_sha1.update(str(user.id).encode('utf-8'))
         if options == '--sync' and ctx.author.id == data['owner-id']:
-            with open('database/userdata.json', 'r') as f:
-                warns = json.load(f)
-            warns_keys = list(warns.keys())
-            warns_values = list(warns.values())
-            warns_dict = {}
-            warn_values_dict = {}
-            warn_new_dict = {}
-            for i in range(len(warns_keys)):
-                warns_dict[warns_keys[i]] = warns_values[i]
-            warn_values_dict = warns_values[warns_keys.index('warns')]
-            warn_new_dict = warn_values_dict[str(ctx.guild.id)]
+            userdata_dict = {}
+            for i in range(len(userdata_keys)):
+                userdata_dict[userdata_keys[i]] = userdata_values[i]
+            userdata_values_dict = userdata_values[userdata_keys.index('warns')]
+            userdata_new_dict = userdata_values_dict[str(ctx.guild.id)]
             try:
-                warn_new_dict[str(user_sha1.hexdigest())] = str(int(warns['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())]) + 1)
+                userdata_new_dict[str(user_sha1.hexdigest())] = str(int(user_data['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())]) + 1)
             except:
-                warn_new_dict[str(user_sha1.hexdigest())] = '1'
-            warns_dict['warns'][str(ctx.guild.id)] = warn_new_dict
+                userdata_new_dict[str(user_sha1.hexdigest())] = '1'
+            userdata_dict['warns'][str(ctx.guild.id)] = userdata_new_dict
             with open('database/userdata.json', 'w') as f:
-                json.dump(warns_dict, f, indent = 4)
+                json.dump(userdata_dict, f, indent = 4)
             load_userdata()
             embed=discord.Embed(title=str(user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-warned'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+reason, color=0x81FA28)
             await ctx.channel.send(embed=embed)
@@ -1753,24 +1836,18 @@ async def warn(ctx, user: discord.Member=None, options='None', *, reason='None')
             if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or user.guild_permissions.administrator:
                 await error_code.bypass(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
             else:
-                with open('database/userdata.json', 'r') as f:
-                    warns = json.load(f)
-                warns_keys = list(warns.keys())
-                warns_values = list(warns.values())
-                warns_dict = {}
-                warn_values_dict = {}
-                warn_new_dict = {}
-                for i in range(len(warns_keys)):
-                    warns_dict[warns_keys[i]] = warns_values[i]
-                warn_values_dict = warns_values[warns_keys.index('warns')]
-                warn_new_dict = warn_values_dict[str(ctx.guild.id)]
+                userdata_dict = {}
+                for i in range(len(userdata_keys)):
+                    userdata_dict[userdata_keys[i]] = userdata_values[i]
+                userdata_values_dict = userdata_values[userdata_keys.index('warns')]
+                userdata_new_dict = userdata_values_dict[str(ctx.guild.id)]
                 try:
-                    warn_new_dict[str(user_sha1.hexdigest())] = str(int(warns['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())]) + 1)
+                    userdata_new_dict[str(user_sha1.hexdigest())] = str(int(user_data['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())]) + 1)
                 except:
-                    warn_new_dict[str(user_sha1.hexdigest())] = '1'
-                warns_dict['warns'][str(ctx.guild.id)] = warn_new_dict
+                    userdata_new_dict[str(user_sha1.hexdigest())] = '1'
+                userdata_dict['warns'][str(ctx.guild.id)] = userdata_new_dict
                 with open('database/userdata.json', 'w') as f:
-                    json.dump(warns_dict, f, indent = 4)
+                    json.dump(userdata_dict, f, indent = 4)
                 load_userdata()
                 embed=discord.Embed(title=str(user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-warned'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+options, color=0x81FA28)
                 await ctx.channel.send(embed=embed)
@@ -1786,17 +1863,15 @@ async def warn(ctx, user: discord.Member=None, options='None', *, reason='None')
 async def on_message(message):
     if str(message.channel.type) == 'private':
         print(message.channel, ':', message.content)
+        return
     if message.author == bot.user or message.author.bot:
         return
+    print(now_time(), message.guild.name, '|', message.author, ':', message.content)
     salt(message.author.id)
     try:
-        if not os.path.isfile('database/chatfilter/'+str(message.author.guild.id)+'.txt'):
-            with open('database/chatfilter/'+str(message.author.guild.id)+'.txt', 'a') as f:
-                f.write('')
         for j in ['admin', 'bypass']:
             if str(message.guild.id) not in list(userdata_values[userdata_keys.index(j)].keys()):
                 userdata_dict = {}
-                userdata_values_dict = {}
                 for i in range(len(userdata_keys)):
                     userdata_dict[userdata_keys[i]] = userdata_values[i]
                 userdata_values_dict = userdata_values[userdata_keys.index(j)]
@@ -1809,7 +1884,6 @@ async def on_message(message):
                 load_userdata()
         if str(message.guild.id) not in list(userdata_values[userdata_keys.index('warns')].keys()):
             userdata_dict = {}
-            userdata_values_dict = {}
             for i in range(len(userdata_keys)):
                 userdata_dict[userdata_keys[i]] = userdata_values[i]
             userdata_values_dict = userdata_values[userdata_keys.index('warns')]
@@ -1823,7 +1897,6 @@ async def on_message(message):
         for j in ['url', 'title']:
             if str(message.guild.id) not in list(musicdata_values[musicdata_keys.index(j)].keys()):
                 musicdata_dict = {}
-                musicdata_values_dict = {}
                 for i in range(len(musicdata_keys)):
                     musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
                 musicdata_values_dict = musicdata_values[musicdata_keys.index(j)]
@@ -1835,7 +1908,6 @@ async def on_message(message):
         for j in ['repeat', 'button_switch']:
             if str(message.guild.id) not in list(musicdata_values[musicdata_keys.index(j)].keys()):
                 musicdata_dict = {}
-                musicdata_values_dict = {}
                 for i in range(len(musicdata_keys)):
                     musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
                 musicdata_values_dict = musicdata_values[musicdata_keys.index(j)]
@@ -1846,7 +1918,6 @@ async def on_message(message):
                 load_music()
         if str(message.guild.id) not in list(server_data['language'].keys()):
             serverdata_dict = {}
-            serverdata_values_dict = {}
             for i in range(len(serverdata_keys)):
                 serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
             serverdata_values_dict = serverdata_values[serverdata_keys.index('language')]
@@ -1858,7 +1929,6 @@ async def on_message(message):
         for j in ['picture-only-channel', 'enter-voice-channel', 'voice-category']:
             if str(message.guild.id) not in list(server_data[j].keys()):
                 serverdata_dict = {}
-                serverdata_values_dict = {}
                 for i in range(len(serverdata_keys)):
                     serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
                 serverdata_values_dict = serverdata_values[serverdata_keys.index(j)]
@@ -1869,7 +1939,6 @@ async def on_message(message):
                 load_serverdata()
         if str(message.guild.id) not in list(server_data['auto-action'].keys()):
             serverdata_dict = {}
-            serverdata_values_dict = {}
             for i in range(len(serverdata_keys)):
                 serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
             serverdata_values_dict = serverdata_values[serverdata_keys.index('auto-action')]
@@ -1880,7 +1949,6 @@ async def on_message(message):
             load_serverdata()
         if str(message.guild.id) not in list(server_data['chat-filter-action'].keys()):
             serverdata_dict = {}
-            serverdata_values_dict = {}
             for i in range(len(serverdata_keys)):
                 serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
             serverdata_values_dict = serverdata_values[serverdata_keys.index('chat-filter-action')]
@@ -1891,7 +1959,6 @@ async def on_message(message):
             load_serverdata()
         if str(message.guild.id) not in list(server_data['music-bot'].keys()):
             serverdata_dict = {}
-            serverdata_values_dict = {}
             for i in range(len(serverdata_keys)):
                 serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
             serverdata_values_dict = serverdata_values[serverdata_keys.index('music-bot')]
@@ -1902,7 +1969,6 @@ async def on_message(message):
             load_serverdata()
         if str(message.guild.id) not in list(server_data['commands'].keys()):
             serverdata_dict = {}
-            serverdata_values_dict = {}
             for i in range(len(serverdata_keys)):
                 serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
             serverdata_values_dict = serverdata_values[serverdata_keys.index('commands')]
@@ -1911,7 +1977,7 @@ async def on_message(message):
             with open("database/serverdata.json", "w") as serverdata_file:
                 json.dump(serverdata_dict, serverdata_file, indent = 4)
             load_serverdata()
-        command_list = ['add', 'addadmin', 'addbypass', 'ban', 'clear', 'chlang', 'chact', 'copy', 'clearwarn', 'cd',
+        command_list = ['add', 'addadmin', 'addbypass', 'ban', 'clear', 'chlang', 'copy', 'clearwarn', 'cd',
                         'ci', 'check', 'exit', 'gay', 'kick', 'mute', 'ping', 'reload', 'remove', 'removeadmin',
                         'removebypass', 'set', 'showwarn', 'slowmode', 'send', 'time', 'tlm', 'tempban', 'tempmute', 'unban',
                         'unmute', 'uinfo', 'warn'
@@ -1919,7 +1985,6 @@ async def on_message(message):
         if 'add' not in list(serverdata_values[serverdata_keys.index('commands')][str(message.guild.id)].keys()):
             for j in command_list:
                 serverdata_dict = {}
-                serverdata_values_dict = {}
                 for i in range(len(serverdata_keys)):
                     serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
                 serverdata_values_dict = serverdata_values[serverdata_keys.index('commands')]
@@ -1930,8 +1995,17 @@ async def on_message(message):
             with open("database/serverdata.json", "w") as serverdata_file:
                 json.dump(serverdata_dict, serverdata_file, indent = 4)
             load_serverdata()
-    except:
-        pass
+        if str(message.guild.id) not in list(server_data['reaction-roles'].keys()):
+            serverdata_dict = {}
+            for i in range(len(serverdata_keys)):
+                serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
+            serverdata_values_dict = serverdata_values[serverdata_keys.index('reaction-roles')]
+            serverdata_values_dict[str(message.guild.id)] = {}
+            serverdata_dict['reaction-roles'] = serverdata_values_dict
+            with open("database/serverdata.json", "w") as serverdata_file:
+                json.dump(serverdata_dict, serverdata_file, indent = 4)
+            load_serverdata()
+    except: ...
     if message.channel.id in server_data['picture-only-channel'][str(message.author.guild.id)] and message.content != "":
         await message.channel.purge(limit=1)
     if message.content.startswith('!info'):
@@ -1972,6 +2046,10 @@ async def on_message(message):
             enable_value += 'chat filter action: '+server_data['chat-filter-action'][str(message.author.guild.id)]+'\n'
         else:
             disable_value += 'chat filter action'+'\n'
+        if server_data['reaction-roles'][str(message.author.guild.id)] != {}:
+            enable_value += 'reaction roles'+'\n'
+        else:
+            disable_value += 'reaction roles'+'\n'
         for i in range(3):
             match i:
                 case 0:
@@ -2011,20 +2089,23 @@ async def on_message(message):
         embed2.add_field(name='🔴｜'+Lang[server_data['language'][str(message.guild.id)]]['function-command-disable'], value=disable_value, inline=True)
         await message.channel.send(embed=embed)
         await message.channel.send(embed=embed2)
-    url_regex = re.compile('(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&\'\(\)\*\+,;=.]+')
-    url_match_word = url_regex.search(message.content)
+    url_regex = re.compile('((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&\'\(\)\*\+,;=.]+)')
+    url_match_word = url_regex.findall(message.content)
     if url_match_word:
-        response = requests.get(f"https://transparencyreport.google.com/transparencyreport/api/v3/safebrowsing/status?site={url_match_word.group()}")
-        safe = response.text[17]
-        match safe:
-            case '2':
-                embed = discord.Embed(title='⚠｜'+Lang[server_data['language'][str(message.guild.id)]]['safety_check'], description=url_match_word.group()+'\n'+Lang[server_data['language'][str(message.guild.id)]]['google_check']+Lang[server_data['language'][str(message.guild.id)]]['unsafe'], color=0xEC2E2E)
-            case '3':
-                embed = discord.Embed(title='⚠｜'+Lang[server_data['language'][str(message.guild.id)]]['safety_check'], description=url_match_word.group()+'\n'+Lang[server_data['language'][str(message.guild.id)]]['google_check']+Lang[server_data['language'][str(message.guild.id)]]['somesafe'], color=0xF2D02A)
-        try:
-            await message.reply(embed=embed) 
-        except:
-            pass
+        for i in range(len(url_match_word)):
+            url = url_match_word[i][0]
+            response = requests.get(f"https://transparencyreport.google.com/transparencyreport/api/v3/safebrowsing/status?site={url}")
+            safe = response.text[17]
+            match safe:
+                case '2':
+                    print(now_time(), url, Lang[server_data['language'][str(message.guild.id)]]['unsafe'])
+                    embed = discord.Embed(title='⚠｜'+Lang[server_data['language'][str(message.guild.id)]]['security_check'], description=url+'\n'+Lang[server_data['language'][str(message.guild.id)]]['google_check']+Lang[server_data['language'][str(message.guild.id)]]['unsafe'], color=0xEC2E2E)
+                case '3':
+                    print(now_time(), url, Lang[server_data['language'][str(message.guild.id)]]['somesafe'])
+                    embed = discord.Embed(title='⚠｜'+Lang[server_data['language'][str(message.guild.id)]]['security_check'], description=url+'\n'+Lang[server_data['language'][str(message.guild.id)]]['google_check']+Lang[server_data['language'][str(message.guild.id)]]['somesafe'], color=0xF2D02A)
+            try:
+                await message.reply(embed=embed)
+            except: ...
     with open('database/chatfilter/'+str(message.author.guild.id)+'.txt', "r", encoding = "utf8") as words:
         badwords = words.read().split()
     if badwords != []:
@@ -2034,8 +2115,7 @@ async def on_message(message):
             if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(message.guild.id)].values()) or message.author.guild_permissions.administrator:
                 await bot.process_commands(message)
                 return
-        except:
-            pass
+        except: ...
         else:
             with open('database/chatfilter/'+str(message.author.guild.id)+'.txt', "r", encoding = "utf8") as words:
                 badwords = words.read().split()
@@ -2050,25 +2130,18 @@ async def on_message(message):
                     print(now_time(), message.author.name, '❌｜'+Lang[server_data['language'][str(message.guild.id)]]['chat-filter'], match_word.group())
                     reason = Lang[server_data['language'][str(message.guild.id)]]['chat-filter-reason']
                     if server_data['chat-filter-action'][str(message.guild.id)] == 'warn':
-                        with open('database/userdata.json', 'r') as f:
-                            warns = json.load(f)
-                        warns_keys = list(warns.keys())
-                        warns_values = list(warns.values())
-                        warns_dict = {}
-                        warn_values_dict = {}
-                        warn_new_dict = {}
-                        for i in range(len(warns_keys)):
-                            warns_dict[warns_keys[i]] = warns_values[i]
-
-                        warn_values_dict = warns_values[warns_keys.index('warns')]
-                        warn_new_dict = warn_values_dict[str(message.guild.id)]
+                        userdata_dict = {}
+                        for i in range(len(userdata_keys)):
+                            userdata_dict[userdata_keys[i]] = userdata_values[i]
+                        userdata_values_dict = userdata_values[userdata_keys.index('warns')]
+                        userdata_new_dict = userdata_values_dict[str(message.guild.id)]
                         try:
-                            warn_new_dict[str(user_sha1.hexdigest())] = str(int(warns['warns'][str(message.guild.id)][str(user_sha1.hexdigest())]) + 1)
+                            userdata_new_dict[str(user_sha1.hexdigest())] = str(int(user_data['warns'][str(message.guild.id)][str(user_sha1.hexdigest())]) + 1)
                         except:
-                            warn_new_dict[str(user_sha1.hexdigest())] = '1'
-                        warns_dict['warns'][str(message.guild.id)] = warn_new_dict
+                            userdata_new_dict[str(user_sha1.hexdigest())] = '1'
+                        userdata_dict['warns'][str(message.guild.id)] = userdata_new_dict
                         with open('database/userdata.json', 'w') as f:
-                            json.dump(warns_dict, f, indent = 4)
+                            json.dump(userdata_dict, f, indent = 4)
                         load_userdata()
                         embed=discord.Embed(title=str(message.author)+Lang[server_data['language'][str(message.guild.id)]]['user-warned'], description=Lang[server_data['language'][str(message.guild.id)]]['warn-reason']+reason, color=0x81FA28)
                         await message.channel.send(embed=embed)
@@ -2094,8 +2167,7 @@ async def on_message(message):
                         embed=discord.Embed(title=str(message.author)+Lang[server_data['language'][str(message.guild.id)]]['user-kicked'], description=Lang[server_data['language'][str(message.guild.id)]]['warn-reason']+reason, color=0x81FA28)
                         try:
                             await message.author.send(embed=embed)
-                        except:
-                            pass
+                        except: ...
                         await message.guild.kick(message.author)
                         await message.channel.send(embed=embed)
                         print(now_time(), str(message.author), Lang[server_data['language'][str(message.guild.id)]]['user-kicked'], Lang[server_data['language'][str(message.guild.id)]]['warn-reason'], reason)
@@ -2103,8 +2175,7 @@ async def on_message(message):
                         embed=discord.Embed(title=str(message.author)+Lang[server_data['language'][str(message.guild.id)]]['user-banned'], description=Lang[server_data['language'][str(message.guild.id)]]['warn-reason']+reason, color=0x81FA28)
                         try:
                             await message.author.send(embed=embed)
-                        except:
-                            pass
+                        except: ...
                         await message.guild.ban(message.author, reason=reason)
                         await message.channel.send(embed=embed)
                         print(now_time(), str(message.author), Lang[server_data['language'][str(message.guild.id)]]['user-banned'], Lang[server_data['language'][str(message.guild.id)]]['warn-reason'], reason)
@@ -2150,6 +2221,52 @@ async def auto_action(ctx, user, user_sha1, auto_action):
             await ctx.channel.send(embed=embed)
             print(now_time(), str(user), Lang[server_data['language'][str(ctx.guild.id)]]['user-banned'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], reason, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
 
+@bot.event
+async def on_guild_join(guild):
+    print(now_time(), global_Lang['server-added'], guild, f'({guild.id})')
+    if not os.path.isfile('database/chatfilter/'+str(guild.id)+'.txt'):
+        with open('database/chatfilter/'+str(guild.id)+'.txt', 'a') as f:
+            f.write('')
+    if str(guild.id) not in list(server_data['guilds'].keys()):
+        serverdata_dict = {}
+        for i in range(len(serverdata_keys)):
+            serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
+        serverdata_values_dict = serverdata_values[serverdata_keys.index('guilds')]
+        serverdata_values_dict[str(guild.id)] = guild.name
+        serverdata_dict['guilds'] = serverdata_values_dict
+        with open("database/serverdata.json", "w") as serverdata_file:
+            json.dump(serverdata_dict, serverdata_file, indent = 4)
+        load_serverdata()
+
+@bot.event
+async def on_guild_remove(guild):
+    del server_data['guilds'][str(guild.id)]
+    with open("database/serverdata.json", "w") as serverdata_file:
+        json.dump(server_data, serverdata_file, indent = 4)
+    load_serverdata()
+    print(now_time(), global_Lang['server-left'], guild, f'({guild.id})')
+
+@bot.event
+async def on_raw_reaction_add(reaction):
+    guild = bot.get_guild(reaction.guild_id)
+    try:
+        if str(reaction.emoji) in list(server_data['reaction-roles'][str(reaction.guild_id)].keys()):
+            role = server_data['reaction-roles'][str(reaction.guild_id)][str(reaction.emoji)][3:-1]
+            addrole = discord.utils.get(guild.roles, id=int(role))
+            await reaction.member.add_roles(addrole, reason='By reaction')
+    except: ...
+
+@bot.event
+async def on_raw_reaction_remove(reaction):
+    guild = bot.get_guild(reaction.guild_id)
+    member = discord.utils.get(guild.members, id=int(reaction.user_id))
+    try:
+        if str(reaction.emoji) in list(server_data['reaction-roles'][str(reaction.guild_id)].keys()):
+            role = server_data['reaction-roles'][str(reaction.guild_id)][str(reaction.emoji)][3:-1]
+            removerole = discord.utils.get(guild.roles, id=int(role))
+            await member.remove_roles(removerole, reason='By cancel reaction')
+    except: ...
+
 # Music bot
 
 def load_music():
@@ -2161,9 +2278,6 @@ def load_music():
 load_music()
 
 def clear_music():
-    musicdata_dict = {}
-    for i in range(len(musicdata_keys)):
-        musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
     for i in list(music_data['url'].keys()):
         music_data['url'][i] = {}
         music_data['title'][i] = {}
@@ -2198,7 +2312,7 @@ async def playit(ctx):
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     try:
         if not music_data['repeat'][str(ctx.guild.id)]:
-            await ctx.channel.purge(limit=1, check = lambda inter: inter.content == '')
+            #await ctx.channel.purge(limit=1, check = lambda inter: inter.content == '')
             musicdata_dict = {}
             del music_data['url'][str(ctx.guild.id)][str(list(music_data['url'][str(ctx.guild.id)].keys())[0])]
             del music_data['title'][str(ctx.guild.id)][str(list(music_data['title'][str(ctx.guild.id)].keys())[0])]
@@ -2225,8 +2339,7 @@ async def playit(ctx):
         print('',Lang[server_data['language'][str(ctx.guild.id)]]['music-playing'],list(music_data['title'][str(ctx.guild.id)].values())[0],list(music_data['url'][str(ctx.guild.id)].values())[0],'', sep='\n')
         if not music_data['repeat'][str(ctx.guild.id)]:
             await music_button_1(ctx, info)
-    except:
-        pass
+    except: ...
         
 def myafter(ctx):
     button_switch(ctx)
@@ -2238,7 +2351,10 @@ async def music_button_1(ctx, info):
         Info = info['entries'][0]
     elif 'formats' in info:
         Info = info
-    embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['music-playing'], description=Info['title'], color=0x79EF2F)
+    if not music_data['repeat'][str(ctx.guild.id)]:
+        embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['music-playing'], description=Info['title'], color=0x79EF2F)
+    else:
+        embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['music-playing-repeat'], description=Info['title'], color=0x79EF2F)
     embed.set_thumbnail(url=Info.get('thumbnail'))
 
     seconds = Info['duration']
@@ -2255,21 +2371,21 @@ async def music_button_1(ctx, info):
     else:
         embed.add_field(name=Lang[server_data['language'][str(ctx.guild.id)]]['music-repeat'], value=Lang[server_data['language'][str(ctx.guild.id)]]['disable'], inline=True)
     embed.set_footer(text=now_time(), icon_url=ctx.author.avatar_url)
-    await ctx.channel.send(embed=embed)
-    await ctx.send('', components = [[
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-link'], style=ButtonStyle.URL, url=Info.get('webpage_url')),
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-list'], style='2', custom_id='list', emoji='📜'),
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-repeat'], style='2', custom_id='repeat', emoji='🔁'),
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-random'], style='2', custom_id='random', emoji='🔀')],[
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-pause'], style='1', custom_id='pause', emoji='⏸'),
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-resume'], style='1', custom_id='resume', emoji='⏯'),
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-stop'], style='4', custom_id='stop', emoji='⏹'),
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-skip'], style='2', custom_id='skip', emoji='⏩')],[
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-favorite'], style='3', custom_id='favorite', emoji='💕'),
-        Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-unfavorite'], style='4', custom_id='unfavorite', emoji='💔')
-    ]])
+    repeat_style = '3' if music_data['repeat'][str(ctx.guild.id)] else '2'
+    await ctx.send('', embed=embed, components = [ActionRow(
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-link'], style=ButtonStyle.link, url=Info.get('webpage_url')),
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-list'], style='2', custom_id='list', emoji='📜'),
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-repeat'], style=repeat_style, custom_id='repeat', emoji='🔁'),
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-random'], style='2', custom_id='random', emoji='🔀')),ActionRow(
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-pause'], style='1', custom_id='pause', emoji='⏸'),
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-resume'], style='1', custom_id='resume', emoji='⏯'),
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-stop'], style='4', custom_id='stop', emoji='⏹'),
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-skip'], style='1', custom_id='skip', emoji='⏩')),ActionRow(
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-favorite'], style='3', custom_id='favorite', emoji='💕'),
+            Button(label=Lang[server_data['language'][str(ctx.guild.id)]]['music-unfavorite'], style='4', custom_id='unfavorite', emoji='💔'))
+    ])
 
-@bot.command(aliases=['p'])
+@bot.command(aliases=['p', 'PLAY'])
 async def play(ctx, *, url: str=''):
     if server_data['music-bot'][str(ctx.guild.id)]:
         if url == '':
@@ -2292,17 +2408,23 @@ async def play(ctx, *, url: str=''):
             search_title_list = []
             op = []
             num = 0
+            if result["result"] == []:
+                embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['search_fail'], color=0xEC2E2E)
+                await ctx.reply(embed=embed)
+                await ctx.message.add_reaction('❌')
+                return
             for res in result["result"]:
                 search_url_list.append(res["link"])
                 search_title_list.append(res['title'])
                 op.append(SelectOption(label=res['channel']['name'], value=str(num), description=res['title'], emoji='🔍'))
                 num += 1
-            sele = await ctx.reply(content=Lang[server_data['language'][str(ctx.guild.id)]]['search_result'], components=[Select(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= op,
+            embed = discord.Embed(title='🔍｜'+Lang[server_data['language'][str(ctx.guild.id)]]['search_result'], color=0x81FA28)
+            sele = await ctx.reply(embed=embed, content='', components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= op,
                                                 custom_id='music_select'
             )])
             interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'music_select')
             res = interaction.values[0]
-            for i in range(25):
+            for i in range(len(op)):
                 try:
                     if res == str(i):
                         embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['selected'], description=search_title_list[i], color=0x81FA28)
@@ -2310,28 +2432,39 @@ async def play(ctx, *, url: str=''):
                         url = search_url_list[i]
                         await sele.delete()
                         break
+                    else:
+                        continue
                 except:
-                    pass
+                    await ctx.message.add_reaction('❌')
+                    return
         try:
             await voiceChannel.connect()
-        except:
-            pass
+        except: ...
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+        try:
+            await ctx.message.add_reaction('✅')
+        except:
+            return
+        try:
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+        except:
+            await ctx.message.remove_reaction('✅', bot.user)
+            await ctx.message.add_reaction('❌')
+            embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['music-play-error'], color=0xEC2E2E)
+            await ctx.channel.send(embed=embed)
+            return
         if 'entries' in info:
             Url = info['entries'][0]["formats"][0]['url']
         elif 'formats' in info:
             Url = info["formats"][0]['url']
         musicdata_dict = {}
-        musicdata_values_dict = {}
-        musicdata_new_dict = {}
         for i in range(len(musicdata_keys)):
             musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
         musicdata_values_dict = musicdata_values[musicdata_keys.index('url')]
         musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
         try:
-            musicdata_new_dict[str(int(max(list(music_data['url'][str(ctx.guild.id)].keys())))+1)] = str(url)
+            musicdata_new_dict[str(int(max(int(num) for num in list(music_data['url'][str(ctx.guild.id)].keys())))+1)] = str(url)
         except:
             musicdata_new_dict[str(len(musicdata_new_dict))] = str(url)
         musicdata_dict['url'][str(ctx.guild.id)] = musicdata_new_dict
@@ -2340,14 +2473,13 @@ async def play(ctx, *, url: str=''):
         musicdata_values_dict = musicdata_values[musicdata_keys.index('title')]
         musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
         try:
-            musicdata_new_dict[str(int(max(list(music_data['title'][str(ctx.guild.id)].keys())))+1)] = str(info['title'])
+            musicdata_new_dict[str(int(max(int(num) for num in list(music_data['title'][str(ctx.guild.id)].keys())))+1)] = str(info['title'])
         except:
             musicdata_new_dict[str(len(musicdata_new_dict))] = str(info['title'])
         musicdata_dict['title'][str(ctx.guild.id)] = musicdata_new_dict
         with open("database/musicdata.json", "w") as musicdata_file:
             json.dump(musicdata_dict, musicdata_file, indent = 4)
         load_music()
-        await ctx.message.add_reaction('✅')
         try:
             pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
             voice.play(pplayer, after = lambda e: myafter(ctx))
@@ -2367,7 +2499,10 @@ async def leave(ctx):
                 await voice.disconnect()
         except:
             embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['music-bot-not-in-channel'], color=0xEC2E2E)
-            await ctx.reply(embed=embed)
+            try:
+                await ctx.reply(embed=embed)
+            except:
+                await ctx.channel.send(embed=embed)
 
 @bot.command()
 async def pause(ctx):
@@ -2378,7 +2513,10 @@ async def pause(ctx):
                 voice.pause()
         except:
             embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['music-nothing-playing'], color=0xEC2E2E)
-            await ctx.reply(embed=embed)
+            try:
+                await ctx.reply(embed=embed)
+            except:
+                await ctx.channel.send(embed=embed)
 
 @bot.command()
 async def resume(ctx):
@@ -2389,7 +2527,10 @@ async def resume(ctx):
                 voice.resume()
         except:
             embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['music-nothing-pause'], color=0xEC2E2E)
-            await ctx.reply(embed=embed)
+            try:
+                await ctx.reply(embed=embed)
+            except:
+                await ctx.channel.send(embed=embed)
 
 @bot.command()
 async def repeat(ctx):
@@ -2414,15 +2555,8 @@ async def repeat(ctx):
 @bot.command()
 async def stop(ctx):
     if server_data['music-bot'][str(ctx.guild.id)]:
-        musicdata_dict = {}
-        musicdata_values_dict = {}
-        for i in range(len(musicdata_keys)):
-            musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
-        musicdata_values_dict = musicdata_values[musicdata_keys.index('repeat')]
-        musicdata_values_dict[str(ctx.guild.id)] = False
         music_data['url'][str(ctx.guild.id)] = {}
         music_data['title'][str(ctx.guild.id)] = {}
-        music_data['repeat'] = musicdata_values_dict
         with open("database/musicdata.json", "w") as musicdata_file:
             json.dump(music_data, musicdata_file, indent = 4)
         load_music()
@@ -2433,14 +2567,18 @@ async def stop(ctx):
             await voice.disconnect()
         except:
             embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['music-nothing-playing'], color=0xEC2E2E)
-            await ctx.reply(embed=embed)
+            try:
+                await ctx.reply(embed=embed)
+            except:
+                await ctx.channel.send(embed=embed)
         return
 
 @bot.command()
 async def volume(ctx, volume: int=100):
     if server_data['music-bot'][str(ctx.guild.id)]:
         if ctx.voice_client is None:
-            await ctx.send(Lang[server_data['language'][str(ctx.guild.id)]]['music-bot-not-in-channel'])
+            embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['music-bot-not-in-channel'], color=0xEC2E2E)
+            await ctx.reply(embed=embed)
             return
         before_volume = ctx.voice_client.source.volume * 100
         ctx.voice_client.source.volume = volume / 100
@@ -2462,7 +2600,11 @@ async def skip(ctx):
         try:
             voice.stop()
         except:
-            await ctx.channel.send(Lang[server_data['language'][str(ctx.guild.id)]]['music-nothing-playing'])
+            embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['music-nothing-playing'], color=0xEC2E2E)
+            try:
+                await ctx.reply(embed=embed)
+            except:
+                await ctx.channel.send(embed=embed)
         return
 
 @bot.command(aliases=['pl'])
@@ -2486,7 +2628,6 @@ async def playlist(ctx):
 
 @bot.command()
 async def listmove(ctx, before: int, after: int):
-    global gPlaylist, music_name
     if server_data['music-bot'][str(ctx.guild.id)]:
         if before == 0:
             embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['move-error'], color=0xEC2E2E)
@@ -2532,8 +2673,6 @@ async def listremove(ctx, number:int):
             await ctx.channel.send(embed=embed)
             return
         musicdata_dict = {}
-        musicdata_values_dict = {}
-        musicdata_new_dict = {}
         num_list = list(music_data['url'][str(ctx.guild.id)].keys())
         for i in range(len(musicdata_keys)):
             musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
@@ -2591,41 +2730,73 @@ async def favorite(ctx, options='', *, values: str=''):
         data_keys = list(favorite_data.keys())
         data_values = list(favorite_data.values())
         favorite_dict = {}
-        data_values_dict = {}
-
         if options == 'add' or options == 'a':
             if values == '':
                 embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-not-url'], color=0xEC2E2E)
-                await ctx.channel.send(embed=embed)
+                await ctx.reply(embed=embed)
                 return
             else:
                 try:
                     br = mechanize.Browser()
                     br.open(values)
                 except:
-                    embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-error-url'], color=0xEC2E2E)
-                    await ctx.channel.send(embed=embed)
-                    return
+                    videossearch = VideosSearch(values, limit=25)
+                    result = videossearch.result()
+                    search_url_list = []
+                    search_title_list = []
+                    op = []
+                    num = 0
+                    if result["result"] == []:
+                        embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['search_fail'], color=0xEC2E2E)
+                        await ctx.reply(embed=embed)
+                        await ctx.message.add_reaction('❌')
+                        return
+                    for res in result["result"]:
+                        search_url_list.append(res["link"])
+                        search_title_list.append(res['title'])
+                        op.append(SelectOption(label=res['channel']['name'], value=str(num), description=res['title'], emoji='🔍'))
+                        num += 1
+                    embed = discord.Embed(title='🔍｜'+Lang[server_data['language'][str(ctx.guild.id)]]['search_result'], color=0x81FA28)
+                    sele = await ctx.reply(embed=embed, content='', components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= op,
+                                                        custom_id='music_select'
+                    )])
+                    interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'music_select')
+                    res = interaction.values[0]
+                    for i in range(len(op)):
+                        try:
+                            if res == str(i):
+                                embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['selected'], description=search_title_list[i], color=0x81FA28)
+                                await interaction.send(embed=embed)
+                                values = search_url_list[i]
+                                await sele.delete()
+                                break
+                            else:
+                                continue
+                        except:
+                            await ctx.message.add_reaction('❌')
+                            return
                 with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(values, download=False)
                 for i in range(len(data_keys)):
                     favorite_dict[data_keys[i]] = data_values[i]
                 if not favorite_data.__contains__(str(sha1.hexdigest())):
-                    data_values_dict = {str(values): str(info['title'])}
-                
+                    data_values_dict = {str(values): str(info['title'])}  
                 else:
                     data_values_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
                     data_values_dict[str(values)] = str(info['title'])
                 favorite_dict[str(sha1.hexdigest())] = data_values_dict
-
                 with open("database/favorite.json", "w") as favorite_file:
                     json.dump(favorite_dict, favorite_file, indent = 4)
                 embed = discord.Embed(title='✅｜'+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-added'], description=info['title'], color=0x81FA28)
                 await ctx.reply(embed=embed)
         elif options == 'remove'or options == 'r':
+            if str(sha1.hexdigest()) not in data_keys:
+                embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-list-nothing'], color=0xEC2E2E)
+                await ctx.reply(embed=embed)
+                return
             if values == '':
                 embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-remove-not-number'], color=0xEC2E2E)
-                await ctx.channel.send(embed=embed)
+                await ctx.reply(embed=embed)
                 return
             remove_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
             remove_keys = list(remove_dict.keys())
@@ -2633,10 +2804,9 @@ async def favorite(ctx, options='', *, values: str=''):
             try:
                 if int(values) > len(remove_keys)-1:
                     embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['out-range'], color=0xEC2E2E)
-                    await ctx.channel.send(embed=embed)
+                    await ctx.reply(embed=embed)
                     return
-            except:
-                pass
+            except: ...
             if values == '-a':
                 embed = discord.Embed(title='🗑｜'+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-remove-all'], color=0x81FA28)
                 for remove_url in remove_keys:
@@ -2656,7 +2826,7 @@ async def favorite(ctx, options='', *, values: str=''):
                 list_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
             except:
                 embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-list-nothing'], color=0xEC2E2E)
-                await ctx.channel.send(embed=embed)
+                await ctx.reply(embed=embed)
                 return
             list_keys = list(list_dict.keys())
             if list_keys == []:
@@ -2665,14 +2835,14 @@ async def favorite(ctx, options='', *, values: str=''):
                 embed = discord.Embed(title='💕｜'+ctx.author.name+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-list-title'], color=0x79EF2F)
                 for favorite_list in range(len(list_keys)):
                     embed.add_field(name=list_dict[list_keys[favorite_list]], value='No. '+str(favorite_list), inline=False)
-            await ctx.channel.send(embed=embed)
+            await ctx.reply(embed=embed)
         elif options == 'play' or options == 'p':
-            if values == '':
-                embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-play-not-number'], color=0xEC2E2E)
-                await ctx.channel.send(embed=embed)
+            if str(sha1.hexdigest()) not in data_keys:
+                await ctx.message.remove_reaction('✅', bot.user)
+                await ctx.message.add_reaction('❌')
+                embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['favorite-list-nothing'], color=0xEC2E2E)
+                await ctx.reply(embed=embed)
                 return
-            play_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
-            play_keys = list(play_dict.keys())
             try:
                 voiceChannel = discord.utils.get(ctx.guild.voice_channels, id=ctx.author.voice.channel.id)
             except:
@@ -2681,33 +2851,91 @@ async def favorite(ctx, options='', *, values: str=''):
                 return
             try:
                 await voiceChannel.connect()
-            except:
-                pass
-            await ctx.message.add_reaction('✅')
+            except: ...
             voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+            try:
+                await ctx.message.add_reaction('✅')
+            except:
+                return
+            play_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
+            play_keys = list(play_dict.keys())
             musicdata_dict = {}
-            musicdata_values_dict = {}
-            musicdata_new_dict = {}
             for i in range(len(musicdata_keys)):
                 musicdata_dict[musicdata_keys[i]] = musicdata_values[i]
-            if values == '-a':
+            if values == '':
+                favorite_url_list = []
+                favorite_title_list = []
+                op = []
+                num = 0
+                for res in favorite_data[str(sha1.hexdigest())]:
+                    favorite_url_list.append(res)
+                    favorite_title_list.append(favorite_data[str(sha1.hexdigest())][res])
+                    op.append(SelectOption(label=favorite_data[str(sha1.hexdigest())][res], value=str(num), description=res, emoji='🔍'))
+                    num += 1
+                embed = discord.Embed(title='🔍｜'+Lang[server_data['language'][str(ctx.guild.id)]]['search_result'], color=0x81FA28)
+                sele = await ctx.reply(embed=embed, content='', components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= op,
+                                                    custom_id='favorite_select'
+                )])
+                interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'favorite_select')
+                res = interaction.values[0]
+                for i in range(len(op)):
+                    try:
+                        if res == str(i):
+                            embed = discord.Embed(title=Lang[server_data['language'][str(ctx.guild.id)]]['selected'], description=favorite_title_list[i], color=0x81FA28)
+                            await interaction.send(embed=embed)
+                            values = favorite_url_list[i]
+                            await sele.delete()
+                            break
+                        else:
+                            continue
+                    except:
+                        await ctx.message.add_reaction('❌')
+                        return
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(values, download=False)
+                if 'entries' in info:
+                    Url = info['entries'][0]["formats"][0]['url']
+                elif 'formats' in info:
+                    Url = info["formats"][0]['url']
+                musicdata_values_dict = musicdata_values[musicdata_keys.index('url')]
+                musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
+                try:
+                    musicdata_new_dict[str(int(max(int(num) for num in list(music_data['url'][str(ctx.guild.id)].keys())))+1)] = values
+                except:
+                    musicdata_new_dict[str(len(musicdata_new_dict))] = values
+                musicdata_dict['url'][str(ctx.guild.id)] = musicdata_new_dict
+                with open("database/musicdata.json", "w") as musicdata_file:
+                    json.dump(musicdata_dict, musicdata_file, indent = 4)
+                load_music()
+                musicdata_values_dict = musicdata_values[musicdata_keys.index('title')]
+                musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
+                try:
+                    musicdata_new_dict[str(int(max(int(num) for num in list(music_data['title'][str(ctx.guild.id)].keys())))+1)] = str(info['title'])
+                except:
+                    musicdata_new_dict[str(len(musicdata_new_dict))] = str(info['title'])
+                musicdata_dict['title'][str(ctx.guild.id)] = musicdata_new_dict
+                with open("database/musicdata.json", "w") as musicdata_file:
+                    json.dump(musicdata_dict, musicdata_file, indent = 4)
+                load_music()
+            elif values == '-a':
                 musicdata_values_dict = musicdata_values[musicdata_keys.index('url')]
                 musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
                 for play_url in play_keys:
                     try:
-                        musicdata_new_dict[str(int(max(list(music_data['url'][str(ctx.guild.id)].keys())))+1)] = str(play_url)
+                        musicdata_new_dict[str(int(max(int(num) for num in list(music_data['url'][str(ctx.guild.id)].keys())))+1)] = str(play_url)
                     except:
                         musicdata_new_dict[str(len(musicdata_new_dict))] = str(play_url)
                 musicdata_dict['url'][str(ctx.guild.id)] = musicdata_new_dict
                 with open("database/musicdata.json", "w") as musicdata_file:
                     json.dump(musicdata_dict, musicdata_file, indent = 4)
+                load_music()
                 musicdata_values_dict = musicdata_values[musicdata_keys.index('title')]
                 musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
                 for play_url in play_keys:
                     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                         info = ydl.extract_info(play_url, download=False)
                     try:
-                        musicdata_new_dict[str(int(max(list(music_data['title'][str(ctx.guild.id)].keys())))+1)] = str(info['title'])
+                        musicdata_new_dict[str(int(max(int(num) for num in list(music_data['title'][str(ctx.guild.id)].keys())))+1)] = str(info['title'])
                     except:
                         musicdata_new_dict[str(len(musicdata_new_dict))] = str(info['title'])
                 musicdata_dict['title'][str(ctx.guild.id)] = musicdata_new_dict
@@ -2722,8 +2950,10 @@ async def favorite(ctx, options='', *, values: str=''):
                     Url = info["formats"][0]['url']
             else:
                 if int(values) > len(play_keys)-1:
+                    await ctx.message.remove_reaction('✅', bot.user)
+                    await ctx.message.add_reaction('❌')
                     embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['out-range'], color=0xEC2E2E)
-                    await ctx.channel.send(embed=embed)
+                    await ctx.reply(embed=embed)
                     return
                 with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(play_keys[int(values)], download=False)
@@ -2734,23 +2964,23 @@ async def favorite(ctx, options='', *, values: str=''):
                 musicdata_values_dict = musicdata_values[musicdata_keys.index('url')]
                 musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
                 try:
-                    musicdata_new_dict[str(int(max(list(music_data['url'][str(ctx.guild.id)].keys())))+1)] = str(play_keys[int(values)])
+                    musicdata_new_dict[str(int(max(int(num) for num in list(music_data['url'][str(ctx.guild.id)].keys())))+1)] = str(play_keys[int(values)])
                 except:
                     musicdata_new_dict[str(len(musicdata_new_dict))] = str(play_keys[int(values)])
                 musicdata_dict['url'][str(ctx.guild.id)] = musicdata_new_dict
                 with open("database/musicdata.json", "w") as musicdata_file:
                     json.dump(musicdata_dict, musicdata_file, indent = 4)
+                load_music()
                 musicdata_values_dict = musicdata_values[musicdata_keys.index('title')]
                 musicdata_new_dict = musicdata_values_dict[str(ctx.guild.id)]
                 try:
-                    musicdata_new_dict[str(int(max(list(music_data['title'][str(ctx.guild.id)].keys())))+1)] = str(info['title'])
+                    musicdata_new_dict[str(int(max(int(num) for num in list(music_data['title'][str(ctx.guild.id)].keys())))+1)] = str(info['title'])
                 except:
                     musicdata_new_dict[str(len(musicdata_new_dict))] = str(info['title'])
                 musicdata_dict['title'][str(ctx.guild.id)] = musicdata_new_dict
                 with open("database/musicdata.json", "w") as musicdata_file:
                     json.dump(musicdata_dict, musicdata_file, indent = 4)
                 load_music()
-                await ctx.message.add_reaction('✅')
             try:    
                 pplayer = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(Url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"), 1)
                 voice.play(pplayer, after = lambda e: myafter(ctx))
@@ -2761,16 +2991,14 @@ async def favorite(ctx, options='', *, values: str=''):
                 embed = discord.Embed(title='✅｜'+Lang[server_data['language'][str(ctx.guild.id)]]['playlist_added'], color=0x81FA28)
                 await ctx.reply(embed=embed)
         else:
-            await ctx.send(content='', components=[Select(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= [
+            await ctx.send(content='', components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= [
                                                     SelectOption(label=prefix+'favorite add', value=prefix+'favorite add', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-add'], emoji='💕'),
                                                     SelectOption(label=prefix+'favorite remove', value=prefix+'favorite remove', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-remove'], emoji='🗑'),
                                                     SelectOption(label=prefix+'favorite list', value=prefix+'favorite list', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-list'], emoji='📜'),
                                                     SelectOption(label=prefix+'favorite play', value=prefix+'favorite play', description=Lang[server_data['language'][str(ctx.guild.id)]]['favorite-menu-play'], emoji='▶')
                                                 ],
-                                                custom_id='favorite_menu_'
+                                                custom_id='favorite_menu'
                 )])
-
-#            
 
 @bot.event
 async def on_button_click(interaction):
@@ -2783,80 +3011,303 @@ async def on_button_click(interaction):
         embed = discord.Embed(title='', color=0xEDFA28)
         embed.add_field(name='專案已關閉', value='如要刪除專案請點擊以下按鈕', inline=False)
         await interaction.channel.send(embed=embed)
-        await interaction.channel.send('', components = [
-                Button(label='刪除專案', style='4', custom_id='delete_tick', emoji='🗑')])
+        await interaction.channel.send('', components = [ActionRow(
+                Button(label='刪除專案', style='4', custom_id='delete_tick', emoji='🗑'))
+                ])
     elif interaction.component.label.startswith("刪除專案"):
         await interaction.channel.delete()
-    elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-pause']) and music_data['button_switch'][str(interaction.author.guild.id)]:
-        await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-pause'])
-        await pause(interaction)
-    elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-resume']) and music_data['button_switch'][str(interaction.author.guild.id)]:
-        await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-resume'])
-        await resume(interaction)
-    elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-list']) and music_data['button_switch'][str(interaction.author.guild.id)]:
-        await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-list'])
-        await playlist(interaction)
-    elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-skip']) and music_data['button_switch'][str(interaction.author.guild.id)]:
-        await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-skip'])
-        await skip(interaction)
-    elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-stop']) and music_data['button_switch'][str(interaction.author.guild.id)]:
-        await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-stop'])
-        await stop(interaction)
-    elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-repeat']) and music_data['button_switch'][str(interaction.author.guild.id)]:
-        await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-repeat'])
-        await repeat(interaction)
-    elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-random']) and music_data['button_switch'][str(interaction.author.guild.id)]:
-        await interaction.send(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-random'])
-        await listrandom(interaction)
-    elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-favorite']) and music_data['button_switch'][str(interaction.author.guild.id)]:
-        with open('database/favorite.json', "r", encoding = "utf8") as favorite_file:
-            favorite_data = json.load(favorite_file)
-        data_keys = list(favorite_data.keys())
-        data_values = list(favorite_data.values())
-        favorite_dict = {}
-        data_values_dict = {}
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(list(music_data['url'][str(interaction.author.guild.id)].values())[0], download=False)
-        for i in range(len(data_keys)):
-            favorite_dict[data_keys[i]] = data_values[i]
-        if not favorite_data.__contains__(str(sha1.hexdigest())):
-            data_values_dict = {list(music_data['url'][str(interaction.author.guild.id)].values())[0]: str(info['title'])}
-        else:
-            data_values_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
-            data_values_dict[list(music_data['url'][str(interaction.author.guild.id)].values())[0]] = str(info['title'])
-        favorite_dict[str(sha1.hexdigest())] = data_values_dict
-
-        with open("database/favorite.json", "w") as favorite_file:
-            json.dump(favorite_dict, favorite_file, indent = 4)
-        embed = discord.Embed(title='✅｜'+Lang[server_data['language'][str(interaction.author.guild.id)]]['favorite-added'], description=info['title'], color=0x81FA28)
-        await interaction.send(embed=embed)
-    elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-unfavorite']) and music_data['button_switch'][str(interaction.author.guild.id)]:
-        with open('database/favorite.json', "r", encoding = "utf8") as favorite_file:
-            favorite_data = json.load(favorite_file)
-        data_keys = list(favorite_data.keys())
-        data_values = list(favorite_data.values())
-        favorite_dict = {}
-        data_values_dict = {}
-        remove_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
-
-        remove_url = list(music_data['url'][str(interaction.author.guild.id)].values())[0]
+    if music_data['button_switch'][str(interaction.author.guild.id)]:
         try:
-            embed = discord.Embed(title='🗑｜'+Lang[server_data['language'][str(interaction.author.guild.id)]]['favorite-removed'], description=remove_dict[remove_url], color=0x81FA28)
-            del favorite_data[str(sha1.hexdigest())][str(remove_url)]
-        except:
-            embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(interaction.author.guild.id)]]['favorite-remove-not-favorite'], color=0xEC2E2E)
-        for i in range(len(data_keys)):
-            favorite_dict[data_keys[i]] = data_values[i]
-        with open("database/favorite.json", "w") as config_file:
-            json.dump(favorite_dict, config_file, indent = 4)
-        await interaction.send(embed=embed)
+            if interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-pause']):
+                await interaction.respond(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-pause'], ephemeral=True)
+                await pause(interaction)
+            elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-resume']):
+                await interaction.respond(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-resume'], ephemeral=True)
+                await resume(interaction)
+            elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-list']):
+                await interaction.respond(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-list'], ephemeral=True)
+                await playlist(interaction)
+            elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-skip']):
+                await interaction.respond(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-skip'], ephemeral=True)
+                await skip(interaction)
+            elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-stop']):
+                await interaction.respond(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-stop'], ephemeral=True)
+                await stop(interaction)
+            elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-repeat']):
+                await interaction.respond(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-repeat'], ephemeral=True)
+                await repeat(interaction)
+            elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-random']):
+                await interaction.respond(Lang[server_data['language'][str(interaction.author.guild.id)]]['selected']+Lang[server_data['language'][str(interaction.author.guild.id)]]['music-random'], ephemeral=True)
+                await listrandom(interaction)
+            elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-favorite']):
+                with open('database/favorite.json', "r", encoding = "utf8") as favorite_file:
+                    favorite_data = json.load(favorite_file)
+                data_keys = list(favorite_data.keys())
+                data_values = list(favorite_data.values())
+                favorite_dict = {}
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(list(music_data['url'][str(interaction.author.guild.id)].values())[0], download=False)
+                for i in range(len(data_keys)):
+                    favorite_dict[data_keys[i]] = data_values[i]
+                if not favorite_data.__contains__(str(sha1.hexdigest())):
+                    data_values_dict = {list(music_data['url'][str(interaction.author.guild.id)].values())[0]: str(info['title'])}
+                else:
+                    data_values_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
+                    data_values_dict[list(music_data['url'][str(interaction.author.guild.id)].values())[0]] = str(info['title'])
+                favorite_dict[str(sha1.hexdigest())] = data_values_dict
+                with open("database/favorite.json", "w") as favorite_file:
+                    json.dump(favorite_dict, favorite_file, indent = 4)
+                embed = discord.Embed(title='✅｜'+Lang[server_data['language'][str(interaction.author.guild.id)]]['favorite-added'], description=info['title'], color=0x81FA28)
+                await interaction.respond(embed=embed, ephemeral=True)
+            elif interaction.component.label.startswith(Lang[server_data['language'][str(interaction.author.guild.id)]]['music-unfavorite']):
+                with open('database/favorite.json', "r", encoding = "utf8") as favorite_file:
+                    favorite_data = json.load(favorite_file)
+                data_keys = list(favorite_data.keys())
+                data_values = list(favorite_data.values())
+                favorite_dict = {}
+                remove_dict = data_values[data_keys.index(str(sha1.hexdigest()))]
+                remove_url = list(music_data['url'][str(interaction.author.guild.id)].values())[0]
+                try:
+                    embed = discord.Embed(title='🗑｜'+Lang[server_data['language'][str(interaction.author.guild.id)]]['favorite-removed'], description=remove_dict[remove_url], color=0x81FA28)
+                    await interaction.respond(embed=embed, ephemeral=True)
+                    del favorite_data[str(sha1.hexdigest())][str(remove_url)]
+                except:
+                    embed = discord.Embed(title='❌｜'+Lang[server_data['language'][str(interaction.author.guild.id)]]['favorite-remove-not-favorite'], color=0xEC2E2E)
+                    await interaction.respond(embed=embed, ephemeral=True)
+                for i in range(len(data_keys)):
+                    favorite_dict[data_keys[i]] = data_values[i]
+                with open("database/favorite.json", "w") as favorite_file:
+                    json.dump(favorite_dict, favorite_file, indent = 4)
+        except: ...
+
+# context menu
+
+@interClient.message_command(name = 'Add to chat filter')
+async def add_chatfilter(ctx):
+    ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+    ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+    if ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        with open('database/chatfilter/'+str(ctx.guild.id)+'.txt', "r", encoding = "utf8") as words:
+            badwords = words.read().split()
+        if ' ' in ctx.message.content:
+            temp = re.split('\s', ctx.message.content)
+            content = ''
+            for word in temp:
+                content += f'({word})\s'
+            ctx.message.content = content[0:-2]
+        if ctx.message.content not in badwords:
+            with open('database/chatfilter/'+str(ctx.guild.id)+'.txt', "a", encoding = "utf8") as words:
+                words.write(f'{ctx.message.content}\n')
+            embed = discord.Embed(title='✅｜'+Lang[server_data['language'][str(ctx.guild.id)]]['add-chat-filter'], description=f'`{ctx.message.content}`', color=0x81FA28)
+        await ctx.respond(embed=embed, ephemeral=True)
+    else:
+        await error_code.permission(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+
+@interClient.message_command(name = 'Link security check')
+async def security_check(ctx):
+    url_regex = re.compile('(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&\'\(\)\*\+,;=.]+')
+    url_match_word = url_regex.search(ctx.message.content)
+    if url_match_word:
+        response = requests.get(f"https://transparencyreport.google.com/transparencyreport/api/v3/safebrowsing/status?site={url_match_word.group()}")
+        safe = response.text[17]
+        match safe:
+            case '2':
+                print(now_time(), url_match_word.group(), Lang[server_data['language'][str(ctx.guild.id)]]['unsafe'])
+                embed = discord.Embed(title='⚠｜'+Lang[server_data['language'][str(ctx.guild.id)]]['security_check'], description=url_match_word.group()+'\n'+Lang[server_data['language'][str(ctx.guild.id)]]['google_check']+Lang[server_data['language'][str(ctx.guild.id)]]['unsafe'], color=0xEC2E2E)
+            case '3':
+                print(now_time(), url_match_word.group(), Lang[server_data['language'][str(ctx.guild.id)]]['somesafe'])
+                embed = discord.Embed(title='⚠｜'+Lang[server_data['language'][str(ctx.guild.id)]]['security_check'], description=url_match_word.group()+'\n'+Lang[server_data['language'][str(ctx.guild.id)]]['google_check']+Lang[server_data['language'][str(ctx.guild.id)]]['somesafe'], color=0xF2D02A)
+            case _:
+                embed = discord.Embed(title='⚠｜'+Lang[server_data['language'][str(ctx.guild.id)]]['security_check'], description=url_match_word.group()+'\n'+Lang[server_data['language'][str(ctx.guild.id)]]['google_check']+Lang[server_data['language'][str(ctx.guild.id)]]['safe'], color=0x81FA28)
+    else:
+        embed =discord.Embed(title='❌｜'+Lang[server_data['language'][str(ctx.guild.id)]]['not-url'], color=0xEC2E2E)
+    await ctx.respond(embed=embed, ephemeral=True)
+
+@interClient.user_command(name = 'Ban')
+async def ban_user(ctx):
+    salt(ctx.user.id)
+    ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+    ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+    if ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        user_sha1 = hashlib.sha1(user_salt[str(ctx.user.id)].encode('utf-8'))
+        user_sha1.update(str(ctx.user.id).encode('utf-8'))
+        if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or ctx.user.guild_permissions.administrator:
+            await error_code.bypass(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+        else:
+            embed=discord.Embed(title=str(ctx.user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-banned'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+'None', color=0x81FA28)
+            try:
+                await ctx.user.send(embed=embed)
+            except: ...
+            await ctx.guild.ban(ctx.user, reason='None')
+            await ctx.respond(embed=embed, ephemeral=True)
+            print(now_time(), str(ctx.user), Lang[server_data['language'][str(ctx.guild.id)]]['user-banned'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], 'None', Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
+    else:
+        await error_code.permission(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+
+@interClient.user_command(name = 'Kick')
+async def kick_user(ctx):
+    salt(ctx.user.id)
+    ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+    ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+    if ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        user_sha1 = hashlib.sha1(user_salt[str(ctx.user.id)].encode('utf-8'))
+        user_sha1.update(str(ctx.user.id).encode('utf-8'))
+        if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or ctx.user.guild_permissions.administrator:
+            await error_code.bypass(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+        else:
+            embed=discord.Embed(title=str(ctx.user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-kicked'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+'None', color=0x81FA28)
+            try:
+                await ctx.user.send(embed=embed)
+            except: ...
+            await ctx.guild.kick(ctx.user, reason='None')
+            await ctx.respond(embed=embed, ephemeral=True)
+            print(now_time(), str(ctx.user), Lang[server_data['language'][str(ctx.guild.id)]]['user-kicked'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], 'None', Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
+    else:
+        await error_code.permission(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+
+@interClient.user_command(name = 'Mute')
+async def mute_user(ctx):
+    salt(ctx.user.id)
+    ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+    ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+    if ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        user_sha1 = hashlib.sha1(user_salt[str(ctx.user.id)].encode('utf-8'))
+        user_sha1.update(str(ctx.user.id).encode('utf-8'))
+        if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or ctx.user.guild_permissions.administrator:
+            await error_code.bypass(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+        else:
+            mutedRole = discord.utils.get(ctx.guild.roles, name=Lang[server_data['language'][str(ctx.guild.id)]]['mute-role-name'])
+            all_roles = await ctx.guild.fetch_roles()
+            num_roles = len(all_roles)
+            if not mutedRole:
+                mutedRole = await ctx.guild.create_role(name=Lang[server_data['language'][str(ctx.guild.id)]]['mute-role-name'])
+                await mutedRole.edit(position=num_roles - 2)
+                for channel in ctx.guild.channels:
+                    await channel.set_permissions(mutedRole, speak=False, send_messages=False)
+            await ctx.user.add_roles(mutedRole, reason='None')
+            embed=discord.Embed(title=str(ctx.user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-muted'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+'None', color=0x81FA28)
+            await ctx.respond(embed=embed, ephemeral=True)
+            await ctx.user.send(embed=embed)
+            print(now_time(), str(ctx.user), Lang[server_data['language'][str(ctx.guild.id)]]['user-muted'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], 'None', Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
+    else:
+        await error_code.permission(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+
+@interClient.user_command(name = 'Warn', guild_ids = guild_id)
+async def warn_user(ctx):
+    salt(ctx.user.id)
+    ctx_sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+    ctx_sha1.update(str(ctx.author.id).encode('utf-8'))
+    if ctx.author.guild_permissions.administrator or str(ctx_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+        user_sha1 = hashlib.sha1(user_salt[str(ctx.user.id)].encode('utf-8'))
+        user_sha1.update(str(ctx.user.id).encode('utf-8'))
+        if str(user_sha1.hexdigest()) in list(userdata_values[userdata_keys.index('bypass')][str(ctx.guild.id)].values()) or ctx.user.guild_permissions.administrator:
+            await error_code.bypass(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+        else:
+            userdata_dict = {}
+            for i in range(len(userdata_keys)):
+                userdata_dict[userdata_keys[i]] = userdata_values[i]
+            userdata_values_dict = userdata_values[userdata_keys.index('warns')]
+            userdata_new_dict = userdata_values_dict[str(ctx.guild.id)]
+            try:
+                userdata_new_dict[str(user_sha1.hexdigest())] = str(int(user_data['warns'][str(ctx.guild.id)][str(user_sha1.hexdigest())]) + 1)
+            except:
+                userdata_new_dict[str(user_sha1.hexdigest())] = '1'
+            userdata_dict['warns'][str(ctx.guild.id)] = userdata_new_dict
+            with open('database/userdata.json', 'w') as f:
+                json.dump(userdata_dict, f, indent = 4)
+            load_userdata()
+            embed=discord.Embed(title=str(ctx.user)+Lang[server_data['language'][str(ctx.guild.id)]]['user-warned'], description=Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason']+'None', color=0x81FA28)
+            await ctx.respond(embed=embed, ephemeral=True)
+            await ctx.user.send(embed=embed)
+            print(now_time(), str(ctx.user), Lang[server_data['language'][str(ctx.guild.id)]]['user-warned'], Lang[server_data['language'][str(ctx.guild.id)]]['warn-reason'], 'None', Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
+            await auto_action(ctx, ctx.user, user_sha1, server_data['auto-action'][str(ctx.guild.id)])
+    else:
+        await error_code.permission(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+
+# slash command
+
+@interClient.slash_command(name = 'time', description="View current time")
+async def slash_time(ctx):
+    if server_data['commands'][str(ctx.guild.id)]['time']:
+        print(ctx)
+        await ctx.reply(now_time(), ephemeral=True)
+    else:
+        await error_code.command_disabled(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+
+@interClient.slash_command(name = 'language',
+                            description="Change the display language",
+                            options=[
+                                Option("language", "language name", OptionType.STRING)
+                            ])
+async def slash_chlang(ctx, language=''):
+    if server_data['commands'][str(ctx.guild.id)]['chlang']:
+        sha1 = hashlib.sha1(user_salt[str(ctx.author.id)].encode('utf-8'))
+        sha1.update(str(ctx.author.id).encode('utf-8'))
+        if ctx.author.guild_permissions.administrator or str(sha1.hexdigest()) in list(userdata_values[userdata_keys.index('admin')][str(ctx.guild.id)].values()):
+            if language == '':
+                lang_search_list = []
+                op = []
+                num = 0
+                for i in list(Lang.keys()):
+                    with open('lang/'+i+'.json', 'r', encoding = "utf8") as lang_list:
+                        lang_name = json.load(lang_list)
+                    lang_search_list.append(i)
+                    op.append(SelectOption(label=lang_name['name'], value=str(num), emoji='🔍'))
+                    num += 1
+                await ctx.reply(content='', components=[SelectMenu(placeholder=Lang[server_data['language'][str(ctx.guild.id)]]['menu-select'], options= op,
+                                                custom_id='lang_select'
+                )], ephemeral=True)
+                interaction = await bot.wait_for('select_option', check = lambda inter: inter.custom_id == 'lang_select')
+                res = interaction.values[0]
+                for j in range(len(op)):
+                    try:
+                        if res == str(j):
+                            serverdata_dict = {}
+                            for i in range(len(serverdata_keys)):
+                                serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
+                            serverdata_values_dict = serverdata_values[serverdata_keys.index('language')]
+                            serverdata_values_dict[str(ctx.guild.id)] = lang_search_list[j]
+                            serverdata_dict['language'] = serverdata_values_dict
+                            with open("database/serverdata.json", "w") as serverdata_file:
+                                json.dump(serverdata_dict, serverdata_file, indent = 4)
+                            load_serverdata()
+                            print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['lang-changed'], language, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
+                            break
+                        else:
+                            continue
+                    except:
+                        return
+            else:
+                if '_' in language:
+                    language = re.sub('_', '-', language)
+                checked = await lang.chlang_check(ctx, language, Lang[server_data['language'][str(ctx.guild.id)]], data)
+                if not checked:
+                    return
+                serverdata_dict = {}
+                for i in range(len(serverdata_keys)):
+                    serverdata_dict[serverdata_keys[i]] = serverdata_values[i]
+                serverdata_values_dict = serverdata_values[serverdata_keys.index('language')]
+                serverdata_values_dict[str(ctx.guild.id)] = language
+                serverdata_dict['language'] = serverdata_values_dict
+                with open("database/serverdata.json", "w") as serverdata_file:
+                    json.dump(serverdata_dict, serverdata_file, indent = 4)
+                load_serverdata()
+                embed = discord.Embed(title='🇺🇳｜'+Lang[server_data['language'][str(ctx.guild.id)]]['lang-changed'], color=0x81FA28)
+                await ctx.respond(embed=embed, ephemeral=True)
+                print(now_time(), Lang[server_data['language'][str(ctx.guild.id)]]['lang-changed'], language, Lang[server_data['language'][str(ctx.guild.id)]]['by'], ctx.author)
+        else:
+            await error_code.permission(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+    else:
+        await error_code.command_disabled(ctx, Lang[server_data['language'][str(ctx.guild.id)]])
+
 
 if __name__ == '__main__':
+    web.keep_alive()
     bot.run(data['token'])
 
 
-# blind, tempblind, level system, money system, tick, Q&A
+# blind, tempblind, level system, money system, tick
 
-# auto role
+# join role
 
 # online count, total conut
