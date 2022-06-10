@@ -1,4 +1,7 @@
 {
+    "guilds": {
+
+    },
     "language": {
 
     },
@@ -22,5 +25,8 @@
 	},
 	"commands": {
 		
-	}
+	},
+    "reaction-roles": {
+        
+    }
 }
