@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <link rel="icon" href="https://cdn.discordapp.com/avatars/698811788300517376/158b0053161e777f3bbc6133c730273a.webp?size=100">
+        <title>
+            Discord bot dashboard
+        </title>
+    </head>
+    <body style="background-color:#CCCCCC;">
+        <p style="display:none;" id="data">{{data}}</p>
+        <p style="display:none;" id="music_data">{{music_data}}</p>
+        <div style="position: relative; border: 0px solid; width: 550px; height: 70px;">
+            <div style="position: absolute; color: blue; left: 0;">
+                <form>
+                    請輸入伺服器ID: <input type="text" name="guild_id", id="guild_id">
+                    <input type="button" name="submit" value="送出" onclick="processFormData();">
+                </form>
+            </div>
+            <div style="position: absolute; color: blue; left: 400px;">
+                <font size="6">搜尋結果:</font>
+            </div>
+        </div>
+        <div style="position: relative; border: 0px solid; width: 1000px; height: 800px;">
+            <div style="position: absolute; color: blue; left: 0;">
+                
+                <pre id="guilds"></pre>
+            </div>
+            <div style="position: absolute; color: blue; left: 400px;">
+                <pre id="data_out"></pre>
+            </div>
+            <div style="position: absolute; color: blue; left: 700px;">
+                <pre id="music_out"></pre>
+            </div>
+        </div>
+    </body>
+    <script type="text/javascript">
+        function processFormData() {
+            const nameElement = document.getElementById('guild_id');
+            const guild_id = nameElement.value;
+            var text = document.getElementById("data").innerText;
+            var music = document.getElementById("music_data").innerText;
+            var result = JSON.parse(text)
+            var music_result = JSON.parse(music)
+            var search = '語言: '+JSON.stringify(result["language"][guild_id])+'\n'+
+                         '無文字頻道: '+JSON.stringify((JSON.parse(JSON.stringify(result["picture-only-channel"][guild_id]))), null, 4)+'\n'+
+                         '私人語音頻道進入點: '+JSON.stringify((JSON.parse(JSON.stringify(result["enter-voice-channel"][guild_id]))), null, 4)+'\n'+
+                         '私人語音頻道類別: '+JSON.stringify(result["voice-category"][guild_id])+'\n'+
+                         '自動行為: '+JSON.stringify(result["auto-action"][guild_id])+'\n'+
+                         '觸發過濾器行為: '+JSON.stringify(result["chat-filter-action"][guild_id])+'\n'+
+                         '啟用音樂機器人? '+JSON.stringify(result["music-bot"][guild_id])+'\n'+
+                         '指令啟用狀態: '+JSON.stringify((JSON.parse(JSON.stringify(result["commands"][guild_id]))), null, 4)+'\n'+
+                         '反應身分組: '+JSON.stringify((JSON.parse(JSON.stringify(result["reaction-roles"][guild_id]))), null, 4)+'\n'
+            var music_search = '播放列表: '+'\n'+JSON.stringify((JSON.parse(JSON.stringify(music_result["url"][guild_id]))), null, 4)+'\n'+
+                                                JSON.stringify((JSON.parse(JSON.stringify(music_result["title"][guild_id]))), null, 4)+'\n'+
+                               '循環播放: '+JSON.stringify(music_result["repeat"][guild_id])+'\n'
+            document.getElementById("data_out").innerText=search;
+            document.getElementById("music_out").innerText=music_search;
+            }
+    </script>
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function() {
+        var text = document.getElementById("data").innerText;
+        var result = JSON.parse(text)
+        var search = '伺服器列表: '+JSON.stringify((JSON.parse(JSON.stringify(result["guilds"]))), null, 4)
+        document.getElementById("guilds").innerText=search;
+        });
+    </script>
+</html>
