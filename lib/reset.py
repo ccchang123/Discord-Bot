@@ -1,5 +1,5 @@
 config = {
-    "version": "3.0.0",
+    "version": "3.1.0",
     "language": "",
     "token": "",
     "command-prefix": "",
@@ -47,6 +47,9 @@ musicdata = {
 }
 
 serverdata = {
+    "guilds": {
+
+    },
     "language": {
 
     },
@@ -70,7 +73,10 @@ serverdata = {
 	},
 	"commands": {
 		
-	}
+	},
+    "reaction-roles": {
+        
+    }
 }
 
 import json
